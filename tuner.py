@@ -70,7 +70,7 @@ class HyperparameterTuner(object):
         mnist = read_data_sets("MNIST_data/", one_hot=True)
         task_list = [mnist]
         for seed in range(1, num_datasets):
-            task_list.append(self.permute(mnist, seed))
+            task_list.append(self.permute_mod(mnist))
         return task_list
 
     @staticmethod
@@ -82,6 +82,18 @@ class HyperparameterTuner(object):
         permuted.test._images = permuted.test._images[:, perm]
         permuted.validation._images = permuted.validation._images[:, perm]
         return permuted
+
+    def permute_mod(task):
+        perm_train = task.train
+        perm_test = task.test
+
+        permutation = np.concatenate([perm_train, perm_test])
+        np.random.shuffle(permutation.T)
+        mnistPermutationTrain, mnistPermutationTest = np.split(permutation, [
+            perm_train.shape[0]])
+        permuted = [mnistPermutationTrain, mnistPermutationTest]
+        return permuted
+
 
     def file_name(self, lr, t):
         return 'layers=%d,hidden=%d,lr=%.5f,multiplier=%.2f,mbsize=%d,epochs=%d,perm=%d' \
