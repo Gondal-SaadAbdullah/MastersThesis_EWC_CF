@@ -210,7 +210,7 @@ def train():
         print('DataSetTwo (test) contains: %s images.\n'
               % (dataSetTwoTest.labels.shape[0],))
 
-    classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1 , FLAGS.hidden2], apply_dropout=False)
+    classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1 , FLAGS.hidden2], apply_dropout=True)
 
     print('\nTraining on DataSetOne...')
     print('____________________________________________________________')
@@ -238,7 +238,7 @@ def train():
     print('____________________________________________________________')
     print(time.strftime('%X %x %Z'))
     # Start training on dataSetTwo
-    Classifier.train_mod(classifier, sess=sess, model_name='saad', model_init_name="", dataset=dataSetTwoTrain,
+    Classifier.train_mod(classifier, sess=sess, model_name='saad1', model_init_name="saad", dataset=dataSetTwoTrain,
                      num_updates=(55000 // FLAGS.batch_size_2) * FLAGS.epochs,
                      dataset_lagged = [0],
                      mini_batch_size=FLAGS.batch_size_2,
@@ -248,7 +248,7 @@ def train():
                      testing_data_set=dataSetOneTest
                      )
     y = Classifier.test(classifier, sess=sess,
-                               model_name='saad',
+                               model_name='saad1',
                                batch_xs=dataSetOneTest.images,
                                batch_ys=dataSetOneTest.labels)
 
