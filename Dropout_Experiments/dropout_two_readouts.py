@@ -407,6 +407,7 @@ def train():
             train_writer_ds2.add_summary(s, i)
             s2, acc2 = sess.run([merged, accuracy_ds1],
                                 feed_dict=feed_dict_1(False))
+            # sess.run()
             test_writer_ds1_cf.add_summary(s2, i)
     train_writer_ds2.close()
     test_writer_ds2.close()
