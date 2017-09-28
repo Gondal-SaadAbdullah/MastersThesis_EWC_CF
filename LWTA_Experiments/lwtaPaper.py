@@ -33,6 +33,8 @@ NUM_CLASSES = 10
 IMAGE_SIZE = 28
 IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
+wdict = {}
+
 
 # Initialize the DataSets for the permuted MNIST task
 def initDataSetsPermutation():
@@ -235,14 +237,14 @@ def train():
         return {x: xs, y_: ys, global_step: i}
 
     # weights initialization
-    def weight_variable(shape, stddev):
+    def weight_variable(shape, stddev,name="W"):
         initial = tf.truncated_normal(shape, stddev=stddev)
-        return tf.Variable(initial)
+        return tf.Variable(initial,name=name)
 
     # biases initialization
-    def bias_variable(shape):
+    def bias_variable(shape,name="b"):
         initial = tf.zeros(shape)
-        return tf.Variable(initial)
+        return tf.Variable(initial,name=name)
 
 
         # define a fully connected layer
@@ -280,9 +282,10 @@ def train():
         with tf.name_scope(name):
             with tf.name_scope('weights'):
                 W = weight_variable([channels_in,
-                                     channels_out], stddev)
+                                     channels_out], stddev, name="WMATRIX")
+                wdict[W] = W ;
             with tf.name_scope('biases'):
-                b = bias_variable([channels_out])
+                b = bias_variable([channels_out],name="bias")
             act = tf.matmul(input, W) + b
             tf.summary.histogram("weights", W)
             tf.summary.histogram("biases", b)
@@ -290,7 +293,7 @@ def train():
             return act
 
     # Start an Interactive session
-    sess = tf.InteractiveSession()
+    sess = tf.InteractiveSession(config=tf.ConfigProto(log_device_placement=False))
 
     # Placeholder for input variables
     with tf.name_scope('input'):
@@ -349,6 +352,7 @@ def train():
                                         FLAGS.decayStep, FLAGS.decayFactor, staircase=True)
 
         train_step_tr1 = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).minimize(cross_entropy_tr1)
+        #train_step_tr1_grads = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).compute_gradients(cross_entropy_tr1,)
 
     with tf.name_scope('train_tr2'):
         lr = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
@@ -454,16 +458,22 @@ def train():
     print('____________________________________________________________')
     print(time.strftime('%X %x %Z'))
     # Start training on dataSetTwo
+    print (tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES))
     for i in range(FLAGS.max_steps_ds2):
         if i % 5 == 0:  # record summaries & test-set accuracy every 5 steps
-            s1, acc1 = sess.run([merged, accuracy_tr2],
+            W1 = tf.get_default_graph().get_tensor_by_name("softmax_linear_tr1/weights/WMATRIX:0").eval() ;
+            W2 = tf.get_default_graph().get_tensor_by_name("softmax_linear_tr2/weights/WMATRIX:0").eval() ;
+            _W1 = (wdict.values()[0]).eval() ;
+            _W2 = (wdict.values()[1]).eval() ;            
+            _W1 = (wdict.values()[0]).eval() ;
+            _W2 = (wdict.values()[1]).eval() ;
+            print (W1.min(), W1.max(), W2.min(), W2.max())
+            s1, acc2 = sess.run([merged, accuracy_tr2],
                                 feed_dict=feed_dict_2(False, i))
+            s2, acc1 = sess.run([merged, accuracy_tr1],
+                                feed_dict=feed_dict_1(False, i))
             test_writer_ds2.add_summary(s1, i)
-            print('test set 2 accuracy at step: %s \t \t %s' % (i, acc1))
-            if FLAGS.exclude:
-                s3, accC = sess.run([merged, accuracy_tr1],
-                                    feed_dict=feed_dict_all(False, i))
-                test_writer_dsc_cf.add_summary(s3, i)
+            print('test set 2/1 accuracy at step: %s \t \t %s/%s' % (i, acc2,acc1))
         else:  # record train set summaries, and run training steps
             s, _ = sess.run([merged, train_step_tr2], feed_dict_2(True, i))
             train_writer_ds2.add_summary(s, i)
@@ -532,3 +542,4 @@ if __name__ == '__main__':
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+
