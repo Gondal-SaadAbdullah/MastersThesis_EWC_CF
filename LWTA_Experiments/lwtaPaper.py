@@ -2,6 +2,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# implements LWTA catastrophic forgetting experiments of Srivastava et al. in Sec. 6
+
+
 import tensorflow as tf
 import numpy as np
 import math
@@ -19,6 +22,8 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets.mnist import dense_to_one_hot
 
+# from hgext.histedit import action
+
 FLAGS = None
 
 # The MNIST dataset has 10 classes, representing the digits 0 through 9.
@@ -27,6 +32,8 @@ NUM_CLASSES = 10
 # The MNIST images are always 28x28 pixels.
 IMAGE_SIZE = 28
 IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
+
+wdict = {}
 
 
 # Initialize the DataSets for the permuted MNIST task
@@ -133,6 +140,42 @@ def initDataSetsExcludedDigits():
     labelsAllTrainOnehot = dense_to_one_hot(mnistLabelsTrain, 10)
     labelsAllTestOnehot = dense_to_one_hot(mnistLabelsTest, 10)
 
+    dataset_1_train_labels = 0
+    dataset_1_test_labels = 0
+    dataset_2_train_labels = 0
+    dataset_2_test_labels = 0
+
+    print("Train Labels:")
+    for i in xrange(0, 10):
+        if i in labelsToErase:
+            print("Excluded Label (DS2):")
+            summ = np.sum(labelsExcludedTrainOnehot[:, i], axis=0)
+            dataset_2_train_labels = dataset_2_train_labels + summ
+            print(i, summ)
+        else:
+            print("Keeped Label (DS1):")
+            summ = np.sum(labelsKeepedTrainOnehot[:, i], axis=0)
+            dataset_1_train_labels = dataset_1_train_labels + summ
+            print(i, summ)
+
+    print("Test Labels:")
+    for i in xrange(0, 10):
+        if i in labelsToErase:
+            print("Excluded Label (DS2):")
+            summ = np.sum(labelsExcludedTestOnehot[:, i], axis=0)
+            dataset_2_test_labels = dataset_2_test_labels + summ
+            print(i, summ)
+        else:
+            print("Keeped Label (DS1):")
+            summ = np.sum(labelsKeepedTestOnehot[:, i], axis=0)
+            dataset_1_test_labels = dataset_1_test_labels + summ
+            print(i, summ)
+
+    print("DS1 Train: ", dataset_1_train_labels)
+    print("DS1 Test: ", dataset_1_test_labels)
+    print("DS2 Train: ", dataset_2_train_labels)
+    print("DS2 Test: ", dataset_2_test_labels)
+
     # Create DataSets (1: kept digits, 2: excluded digits, all: MNIST digits)
     global dataSetOneTrain
     dataSetOneTrain = DataSet(255. * dataKeepedTrain,
@@ -158,7 +201,7 @@ def initDataSetsExcludedDigits():
 
 def train():
     # feed dictionary for dataSetOne
-    def feed_dict_1(train):
+    def feed_dict_1(train, i):
         if train:
             xs, ys = dataSetOneTrain.next_batch(FLAGS.batch_size_1)
             k_h = FLAGS.dropout_hidden
@@ -167,10 +210,10 @@ def train():
             xs, ys = dataSetOneTest.images, dataSetOneTest.labels
             k_h = 1.0
             k_i = 1.0
-        return {x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        return {x: xs, y_: ys, global_step: i}
 
     # feed dictionary for dataSetTwo
-    def feed_dict_2(train):
+    def feed_dict_2(train, i):
         if train:
             xs, ys = dataSetTwoTrain.next_batch(FLAGS.batch_size_2)
             k_h = FLAGS.dropout_hidden
@@ -179,10 +222,10 @@ def train():
             xs, ys = dataSetTwoTest.images, dataSetTwoTest.labels
             k_h = 1.0
             k_i = 1.0
-        return {x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        return {x: xs, y_: ys, global_step: i}
 
     # feed dictionary for dataSetAll
-    def feed_dict_all(train):
+    def feed_dict_all(train, i):
         if train:
             xs, ys = dataSetAllTrain.next_batch(FLAGS.batch_size_all)
             k_h = FLAGS.dropout_hidden
@@ -191,17 +234,17 @@ def train():
             xs, ys = dataSetAllTest.images, dataSetAllTest.labels
             k_h = 1.0
             k_i = 1.0
-        return {x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        return {x: xs, y_: ys, global_step: i}
 
     # weights initialization
-    def weight_variable(shape, stddev):
+    def weight_variable(shape, stddev,name="W"):
         initial = tf.truncated_normal(shape, stddev=stddev)
-        return tf.Variable(initial)
+        return tf.Variable(initial,name=name)
 
     # biases initialization
-    def bias_variable(shape):
+    def bias_variable(shape,name="b"):
         initial = tf.zeros(shape)
-        return tf.Variable(initial)
+        return tf.Variable(initial,name=name)
 
 
         # define a fully connected layer
@@ -219,14 +262,30 @@ def train():
             tf.summary.histogram("activation", act)
             return act
 
+    # careful: actual output size is channels_out*blockSize
+    def lwta_layer(input, channels_in, channels_out, blockSize, stddev, name='lwta'):
+        with tf.name_scope(name):
+            with tf.name_scope('weights'):
+                W = weight_variable([channels_in,
+                                     channels_out * blockSize], stddev)
+            with tf.name_scope('biases'):
+                b = bias_variable([blockSize * channels_out])
+            actTmp = tf.reshape(tf.matmul(input, W) + b, (-1, channels_out, blockSize));
+            # ask where the maxes lie --> bool tensor, then cast to float where True --> 1.0, False --> 0.0
+            maxesMask = tf.cast(tf.equal(actTmp, tf.expand_dims(tf.reduce_max(actTmp, axis=2), 2)), tf.float32)
+            # point-wise multiplication of these two tensors will result in a tesnor where only the max
+            # activations are left standing, the rest goes to 0 as specified by LWTA
+            return tf.reshape(actTmp * maxesMask, (-1, channels_out * blockSize))
+
     # define a sotfmax linear classification layer
     def softmax_linear(input, channels_in, channels_out, stddev, name='read'):
         with tf.name_scope(name):
             with tf.name_scope('weights'):
                 W = weight_variable([channels_in,
-                                     channels_out], stddev)
+                                     channels_out], stddev, name="WMATRIX")
+                wdict[W] = W ;
             with tf.name_scope('biases'):
-                b = bias_variable([channels_out])
+                b = bias_variable([channels_out],name="bias")
             act = tf.matmul(input, W) + b
             tf.summary.histogram("weights", W)
             tf.summary.histogram("biases", b)
@@ -234,81 +293,88 @@ def train():
             return act
 
     # Start an Interactive session
-    sess = tf.InteractiveSession()
+    sess = tf.InteractiveSession(config=tf.ConfigProto(log_device_placement=False))
 
     # Placeholder for input variables
     with tf.name_scope('input'):
         x = tf.placeholder(tf.float32, shape=[None, 784], name='x')
         y_ = tf.placeholder(tf.float32, shape=[None, 10], name='labels')
     x_image = tf.reshape(x, [-1, 28, 28, 1])
-    tf.summary.image('input', x_image, 9)
+    global global_step
+    global_step = tf.placeholder(tf.float32, shape=[], name="step");
+    # tf.summary.image('input', x_image, 9)
 
-    # apply dropout to the input layer
-    keep_prob_input = tf.placeholder(tf.float32)
-    tf.summary.scalar('dropout_input', keep_prob_input)
-
-    x_drop = tf.nn.dropout(x, keep_prob_input)
 
     # Create the first hidden layer
-    h_fc1 = fc_layer(x_drop, IMAGE_PIXELS, FLAGS.hidden1,
-                     1.0 / math.sqrt(float(IMAGE_PIXELS)), 'h_fc1')
-
-    # Apply dropout to first hidden layer
-    keep_prob_hidden = tf.placeholder(tf.float32)
-    tf.summary.scalar('dropout_hidden', keep_prob_hidden)
-
-    h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob_hidden)
+    h_fc1 = lwta_layer(x, IMAGE_PIXELS, FLAGS.hidden1, FLAGS.lwtaBlockSize,
+                       1.0 / math.sqrt(float(IMAGE_PIXELS)), 'h_lwta1')
 
     # Create the second hidden layer
-    h_fc2 = fc_layer(h_fc1_drop, FLAGS.hidden1, FLAGS.hidden2,
-                     1.0 / math.sqrt(float(FLAGS.hidden1)), 'h_fc2')
-
-    # apply dropout to second hidden layer
-    h_fc2_drop = tf.nn.dropout(h_fc2, keep_prob_hidden)
+    h_fc2 = lwta_layer(h_fc1, FLAGS.hidden1 * FLAGS.lwtaBlockSize, FLAGS.hidden2, FLAGS.lwtaBlockSize,
+                       1.0 / math.sqrt(float(FLAGS.hidden1 * FLAGS.lwtaBlockSize)), 'h_lwta2')
 
     # Create a softmax linear classification layer for the outputs
-    logits_ds1 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
-                            1.0 / math.sqrt(float(FLAGS.hidden2)),
-                            'softmax_linear')
-
-    logits_ds2 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
-                            1.0 / math.sqrt(float(FLAGS.hidden2)),
-                            'softmax_linear')
+    if FLAGS.hidden3 == -1:
+        logits_tr1 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+                                'softmax_linear_tr1')
+        logits_tr2 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr2')
+    else:
+        h_fc3 = lwta_layer(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, FLAGS.hidden3, FLAGS.lwtaBlockSize,
+                           1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)), 'h_lwta3')
+        logits_tr1 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
+                                'softmax_linear_tr1')
+        logits_tr2 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
+                                'softmax_linear_tr2')
 
     # Define the loss model as a cross entropy with softmax
-    with tf.name_scope('cross_entropy_ds1'):
-        diff_ds1 = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits_ds1)
-        with tf.name_scope('total_ds1'):
-            cross_entropy_ds1 = tf.reduce_mean(diff_ds1)
-    tf.summary.scalar('cross_entropy_ds1', cross_entropy_ds1)
+    with tf.name_scope('cross_entropy_tr1'):
+        diff_tr1 = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits_tr1)
+        with tf.name_scope('total_tr1'):
+            cross_entropy_tr1 = tf.reduce_mean(diff_tr1)
+    tf.summary.scalar('cross_entropy_tr1', cross_entropy_tr1)
 
-    with tf.name_scope('cross_entropy_ds2'):
-        diff_ds2 = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits_ds2)
-        with tf.name_scope('total_ds2'):
-            cross_entropy_ds2 = tf.reduce_mean(diff_ds2)
-    tf.summary.scalar('cross_entropy_ds2', cross_entropy_ds2)
+    # Define the loss model as a cross entropy with softmax
+    with tf.name_scope('cross_entropy_tr2'):
+        diff_tr2 = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits_tr2)
+        with tf.name_scope('total_tr2'):
+            cross_entropy_tr2 = tf.reduce_mean(diff_tr2)
+    tf.summary.scalar('cross_entropy_tr2', cross_entropy_tr2)
 
     # Use Gradient descent optimizer for training steps and minimize x-entropy
-    with tf.name_scope('train'):
-        train_step_ds1 = tf.train.GradientDescentOptimizer(
-            FLAGS.learning_rate).minimize(cross_entropy_ds1)
-        train_step_ds2 = tf.train.GradientDescentOptimizer(
-        FLAGS.learning_rate).minimize(cross_entropy_ds2)
+    # decaying learning rate tickles a few more 0.1% out of the algorithm
+    with tf.name_scope('train_tr1'):
+        lr_tr1 = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
+                                        FLAGS.decayStep, FLAGS.decayFactor, staircase=True)
+
+        train_step_tr1 = tf.train.MomentumOptimizer(learning_rate=lr_tr1, momentum=0.99).minimize(cross_entropy_tr1)
+        #train_step_tr1_grads = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).compute_gradients(cross_entropy_tr1,)
+
+    with tf.name_scope('train_tr2'):
+        lr_tr2 = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
+                                        FLAGS.decayStep, FLAGS.decayFactor, staircase=True)
+
+        train_step_tr2 = tf.train.MomentumOptimizer(learning_rate=lr_tr2, momentum=0.99).minimize(cross_entropy_tr2)
 
     # Compute correct prediction and accuracy
-    with tf.name_scope('accuracy_ds1'):
-        with tf.name_scope('correct_prediction_ds1'):
-            correct_prediction_ds1 = tf.equal(tf.argmax(logits_ds1, 1), tf.argmax(y_, 1))
-        with tf.name_scope('accuracy_ds1'):
-            accuracy_ds1 = tf.reduce_mean(tf.cast(correct_prediction_ds1, tf.float32))
-    tf.summary.scalar('accuracy_ds1', accuracy_ds1)
+    with tf.name_scope('accuracy_tr1'):
+        with tf.name_scope('correct_prediction_tr1'):
+            correct_prediction_tr1 = tf.equal(tf.argmax(logits_tr1, 1), tf.argmax(y_, 1))
+        with tf.name_scope('accuracy_tr1'):
+            accuracy_tr1 = tf.reduce_mean(tf.cast(correct_prediction_tr1, tf.float32))
+    tf.summary.scalar('accuracy_tr1', accuracy_tr1)
 
-    with tf.name_scope('accuracy_ds2'):
-        with tf.name_scope('correct_prediction_ds2'):
-            correct_prediction_ds2 = tf.equal(tf.argmax(logits_ds2, 1), tf.argmax(y_, 1))
-        with tf.name_scope('accuracy_ds2'):
-            accuracy_ds2 = tf.reduce_mean(tf.cast(correct_prediction_ds2, tf.float32))
-    tf.summary.scalar('accuracy_ds2', accuracy_ds2)
+    # Compute correct prediction and accuracy
+    with tf.name_scope('accuracy_tr2'):
+        with tf.name_scope('correct_prediction_tr2'):
+            correct_prediction_tr2 = tf.equal(tf.argmax(logits_tr2, 1), tf.argmax(y_, 1))
+        with tf.name_scope('accuracy_tr2'):
+            accuracy_tr2 = tf.reduce_mean(tf.cast(correct_prediction_tr2, tf.float32))
+    tf.summary.scalar('accuracy_tr2', accuracy_tr2)
 
     # Merge all summaries and write them out to /tmp/tensorflow/mnist/logs
     # different writers are used to separate test accuracy from train accuracy
@@ -379,11 +445,11 @@ def train():
     # Start training on dataSetOne
     for i in range(FLAGS.max_steps_ds1):
         if i % 5 == 0:  # record summaries & test-set accuracy every 5 steps
-            s, acc = sess.run([merged, accuracy_ds1], feed_dict=feed_dict_1(False))
+            _lr, s, acc = sess.run([lr_tr1, merged, accuracy_tr1], feed_dict=feed_dict_1(False, i))
             test_writer_ds1.add_summary(s, i)
-            print('test set 1 accuracy at step: %s \t \t %s' % (i, acc))
+            print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
         else:  # record train set summaries, and run training steps
-            s, _ = sess.run([merged, train_step_ds1], feed_dict_1(True))
+            s, _ = sess.run([merged, train_step_tr1], feed_dict_1(True, i))
             train_writer_ds1.add_summary(s, i)
     train_writer_ds1.close()
     test_writer_ds1.close()
@@ -392,21 +458,27 @@ def train():
     print('____________________________________________________________')
     print(time.strftime('%X %x %Z'))
     # Start training on dataSetTwo
+    print (tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES))
     for i in range(FLAGS.max_steps_ds2):
         if i % 5 == 0:  # record summaries & test-set accuracy every 5 steps
-            s1, acc1 = sess.run([merged, accuracy_ds2],
-                                feed_dict=feed_dict_2(False))
+            W1 = tf.get_default_graph().get_tensor_by_name("softmax_linear_tr1/weights/WMATRIX:0").eval() ;
+            W2 = tf.get_default_graph().get_tensor_by_name("softmax_linear_tr2/weights/WMATRIX:0").eval() ;
+            _W1 = (wdict.values()[0]).eval() ;
+            _W2 = (wdict.values()[1]).eval() ;            
+            _W1 = (wdict.values()[0]).eval() ;
+            _W2 = (wdict.values()[1]).eval() ;
+            print (W1.min(), W1.max(), W2.min(), W2.max())
+            s1, acc2 = sess.run([merged, accuracy_tr2],
+                                feed_dict=feed_dict_2(False, i))
+            s2, acc1 = sess.run([merged, accuracy_tr1],
+                                feed_dict=feed_dict_1(False, i))
             test_writer_ds2.add_summary(s1, i)
-            print('test set 2 accuracy at step: %s \t \t %s' % (i, acc1))
-            if FLAGS.exclude:
-                s3, accC = sess.run([merged, accuracy_ds1],
-                                    feed_dict=feed_dict_all(False))
-                test_writer_dsc_cf.add_summary(s3, i)
+            print('test set 2/1 accuracy at step: %s \t \t %s/%s' % (i, acc2,acc1))
         else:  # record train set summaries, and run training steps
-            s, _ = sess.run([merged, train_step_ds2], feed_dict_2(True))
+            s, _ = sess.run([merged, train_step_tr2], feed_dict_2(True, i))
             train_writer_ds2.add_summary(s, i)
-            s2, acc2 = sess.run([merged, accuracy_ds1],
-                                feed_dict=feed_dict_1(False))
+            s2, acc2 = sess.run([merged, accuracy_tr1],
+                                feed_dict=feed_dict_1(False, i))
             test_writer_ds1_cf.add_summary(s2, i)
     train_writer_ds2.close()
     test_writer_ds2.close()
@@ -436,10 +508,14 @@ if __name__ == '__main__':
                         help='Number of steps to run trainer for data set 1.')
     parser.add_argument('--max_steps_ds2', type=int, default=100,
                         help='Number of steps to run trainer for data set 2.')
+    parser.add_argument('--lwtaBlockSize', type=int, default=2,
+                        help='Number of lwta blocks in all hidden layers')
     parser.add_argument('--hidden1', type=int, default=128,
                         help='Number of hidden units in layer 1')
     parser.add_argument('--hidden2', type=int, default=32,
                         help='Number of hidden units in layer 2')
+    parser.add_argument('--hidden3', type=int, default=-1,
+                        help='Number of hidden units in layer 3')
     parser.add_argument('--batch_size_1', type=int, default=100,
                         help='Size of mini-batches we feed from dataSetOne.')
     parser.add_argument('--batch_size_2', type=int, default=100,
@@ -448,6 +524,11 @@ if __name__ == '__main__':
                         help='Size of mini-batches we feed from dataSetAll.')
     parser.add_argument('--learning_rate', type=float, default=0.01,
                         help='Initial learning rate')
+    parser.add_argument('--decayStep', type=float, default=100000,
+                        help='decayStep')
+    parser.add_argument('--decayFactor', type=float, default=1.,
+                        help='decayFactor')
+
     parser.add_argument('--dropout_hidden', type=float, default=0.5,
                         help='Keep probability for dropout on hidden units.')
     parser.add_argument('--dropout_input', type=float, default=0.8,
@@ -461,3 +542,4 @@ if __name__ == '__main__':
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
+
