@@ -291,7 +291,7 @@ def train():
 
     # Initialize all global variables
     if args.load_model:
-        print('\nLoading Model: %s', args.load_model)
+        print('\nLoading Model: ', args.load_model)
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir=args.checkpoints_dir,
                                              latest_filename=args.load_model)
 
@@ -299,37 +299,31 @@ def train():
     else:
         tf.global_variables_initializer().run()
 
-    def accuracy(test_accuracy):
-        if test_accuracy is 1:
-            accuracy_tr1
-        elif test_accuracy is 2:
-            accuracy_tr2,
-        elif test_accuracy is 3:
-            accuracy_tr3,
-        elif test_accuracy is 4:
-            accuracy_tr4
-
-    def train_step(training_step):
-        if training_step is 1:
-            train_step_tr1
-        elif training_step is 2:
-            train_step_tr2
-        elif training_step is 3:
-            train_step_tr3
-        elif training_step is 4:
-            train_step_tr4
-
     with tf.name_scope("training"):
         print('\n\nTraining on given Dataset...')
         print('____________________________________________________________')
         print(time.strftime('%X %x %Z'))
-        for i in range(FLAGS.max_steps):
+        for i in range(FLAGS.start_at_step, FLAGS.max_steps + FLAGS.start_at_step):
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
-                _lr, s, acc = sess.run([lr, merged, accuracy(testing_readout_layer)], feed_dict=feed_dict(False, i))
+                if testing_readout_layer is 1:
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict(False, i))
+                elif testing_readout_layer is 2:
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict(False, i))
+                elif testing_readout_layer is 3:
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict(False, i))
+                elif testing_readout_layer is 4:
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict(False, i))
                 test_writer_ds.add_summary(s, i)
                 print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
             else:  # record train set summaries, and run training steps
-                s, _ = sess.run([merged, train_step(training_readout_layer)], feed_dict(True, i))
+                if training_readout_layer is 1:
+                    s, _ = sess.run([merged, train_step_tr1], feed_dict(True, i))
+                elif training_readout_layer is 2:
+                    s, _ = sess.run([merged, train_step_tr2], feed_dict(True, i))
+                if training_readout_layer is 3:
+                    s, _ = sess.run([merged, train_step_tr3], feed_dict(True, i))
+                if training_readout_layer is 4:
+                    s, _ = sess.run([merged, train_step_tr4], feed_dict(True, i))
                 train_writer_ds.add_summary(s, i)
         train_writer_ds.close()
         test_writer_ds.close()
@@ -387,7 +381,7 @@ if __name__ == '__main__':
                         help='Provide path to save model.')
     parser.add_argument('--test_frequency', type=int, default='50',
                         help='Frequency after which a test cycle runs.')
-    parser.add_argument('--start_at_step', type=float, default='0',
+    parser.add_argument('--start_at_step', type=int, default='0',
                         help='Global step should start here, and continue for the specified number of iterations')
     parser.add_argument('--training_readout_layer', type=int, default='1',
                         help='Specify the readout layer (1,2,3,4) for training.')
