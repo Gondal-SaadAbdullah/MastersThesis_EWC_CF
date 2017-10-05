@@ -348,17 +348,17 @@ def train():
     # Use Gradient descent optimizer for training steps and minimize x-entropy
     # decaying learning rate tickles a few more 0.1% out of the algorithm
     with tf.name_scope('train_tr1'):
-        lr = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
+        lr_tr1 = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
                                         FLAGS.decayStep, FLAGS.decayFactor, staircase=True)
 
-        train_step_tr1 = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).minimize(cross_entropy_tr1)
+        train_step_tr1 = tf.train.MomentumOptimizer(learning_rate=lr_tr1, momentum=0.99).minimize(cross_entropy_tr1)
         #train_step_tr1_grads = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).compute_gradients(cross_entropy_tr1,)
 
     with tf.name_scope('train_tr2'):
-        lr = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
+        lr_tr2 = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
                                         FLAGS.decayStep, FLAGS.decayFactor, staircase=True)
 
-        train_step_tr2 = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).minimize(cross_entropy_tr2)
+        train_step_tr2 = tf.train.MomentumOptimizer(learning_rate=lr_tr2, momentum=0.99).minimize(cross_entropy_tr2)
 
     # Compute correct prediction and accuracy
     with tf.name_scope('accuracy_tr1'):
@@ -445,7 +445,7 @@ def train():
     # Start training on dataSetOne
     for i in range(FLAGS.max_steps_ds1):
         if i % 5 == 0:  # record summaries & test-set accuracy every 5 steps
-            _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict_1(False, i))
+            _lr, s, acc = sess.run([lr_tr1, merged, accuracy_tr1], feed_dict=feed_dict_1(False, i))
             test_writer_ds1.add_summary(s, i)
             print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
         else:  # record train set summaries, and run training steps
