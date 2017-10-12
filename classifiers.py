@@ -10,7 +10,7 @@ class Classifier(Network):
     def __init__(self, checkpoint_path='logs/checkpoints/', summaries_path='logs/summaries/', *args, **kwargs):
         super(Classifier, self).__init__(*args, **kwargs)
         self.checkpoint_path = checkpoint_path
-        self. summaries_path = summaries_path
+        self.summaries_path = summaries_path
         self.writer = None
         self.merged = None
         self.optimizer = None
