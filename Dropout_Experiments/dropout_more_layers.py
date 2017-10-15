@@ -211,6 +211,8 @@ def train():
                                 1.0 / math.sqrt(float(FLAGS.hidden2)),
                                 'softmax_linear_tr4')
 
+    #logitsAll = tf.clip_by_value(logits_tr1,0,10000)+tf.clip_by_value(logits_tr2,0,10000)+tf.clip_by_value(logits_tr3,0,10000)+tf.clip_by_value(logits_tr4,0,10000) ;
+    logitsAll=logits_tr1+logits_tr2+logits_tr3+logits_tr4 ;
     # Define the loss model as a cross entropy with softmax layer 1
     with tf.name_scope('cross_entropy_tr1'):
         diff_tr1 = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits_tr1)
@@ -297,6 +299,14 @@ def train():
             accuracy_tr4 = tf.reduce_mean(tf.cast(correct_prediction_tr4, tf.float32))
     tf.summary.scalar('accuracy_tr4', accuracy_tr4)
 
+    # Compute correct prediction and accuracy
+    with tf.name_scope('accuracy_trAll'):
+        with tf.name_scope('correct_prediction_trAll'):
+            correct_prediction_trAll = tf.equal(tf.argmax(logitsAll, 1), tf.argmax(y_, 1))
+        with tf.name_scope('accuracy_trAll'):
+            accuracy_trAll = tf.reduce_mean(tf.cast(correct_prediction_trAll, tf.float32))
+    tf.summary.scalar('accuracy_trAll', accuracy_trAll)
+
     # Merge all summaries and write them out to /tmp/tensorflow/mnist/logs
     # different writers are used to separate test accuracy from train accuracy
     # also a writer is implemented to observe CF after we trained on both sets
@@ -327,13 +337,16 @@ def train():
         for i in range(FLAGS.start_at_step, FLAGS.max_steps + FLAGS.start_at_step):
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
                 if testing_readout_layer is 1:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict(False, i))
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr1,logits_tr1], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is 2:
                     _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is 3:
                     _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is 4:
                     _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict(False, i))
+                elif testing_readout_layer is -1:
+                    _lr, s, acc,l1,l2,l3,l4,lAll = sess.run([lr, merged, accuracy_trAll,logits_tr1,logits_tr2,logits_tr3,logits_tr4,logitsAll], feed_dict=feed_dict(False, i))
+
                 test_writer_ds.add_summary(s, i)
                 print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
             else:  # record train set summaries, and run training steps
