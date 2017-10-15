@@ -1,5 +1,6 @@
 import os
 import tensorflow as tf
+import csv
 
 from network import Network
 
@@ -36,8 +37,10 @@ class Classifier(Network):
         print('training ' + model_name + ' with weights initialized at ' + str(model_init_name))
         self.prepare_for_training(sess, model_name, model_init_name, fisher_multiplier, learning_rate)
         self.save_weights(-1, sess, model_name)
+
+        writer = csv.writer(open('ewc_exclude.csv', "wb"))
         for i in range(num_updates):
-            self.minibatch_sgd_mod(sess, i, dataset, mini_batch_size, log_frequency, testing_data_set)
+            self.minibatch_sgd_mod(sess, i, dataset, mini_batch_size, log_frequency, testing_data_set, writer)
         self.update_fisher_full_batch(sess, dataset)
         self.save_weights(i, sess, model_name)
         print('finished training ' + model_name)
@@ -56,7 +59,7 @@ class Classifier(Network):
         if log_frequency and i % log_frequency is 0:
             self.evaluate(sess, i, feed_dict)
 
-    def minibatch_sgd_mod(self, sess, i, dataset, mini_batch_size, log_frequency, testing_data_set):
+    def minibatch_sgd_mod(self, sess, i, dataset, mini_batch_size, log_frequency, testing_data_set, csv_writer):
         batch_xs, batch_ys = dataset.next_batch(mini_batch_size)
         batch_ys = batch_ys.astype("float32")
         feed_dict = self.create_feed_dict(batch_xs, batch_ys)
@@ -65,13 +68,20 @@ class Classifier(Network):
         test_batch_xs, test_batch_ys = testing_data_set.next_batch(mini_batch_size)
         test_feed_dict = self.create_feed_dict(test_batch_xs, test_batch_ys)
         if log_frequency and i % log_frequency is 0:
-            self.evaluate(sess, i, test_feed_dict)
+            self.evaluate_mod(sess, i, test_feed_dict, csv_writer)
 
     def evaluate(self, sess, iteration, feed_dict):
         if self.apply_dropout:
             feed_dict.update({self.keep_prob_input: 1.0, self.keep_prob_hidden: 1.0})
         summary, accuracy = sess.run([self.merged, self.accuracy], feed_dict=feed_dict)
         self.writer.add_summary(summary, iteration)
+
+    def evaluate_mod(self, sess, iteration, feed_dict, csv_writer):
+        if self.apply_dropout:
+            feed_dict.update({self.keep_prob_input: 1.0, self.keep_prob_hidden: 1.0})
+        summary, accuracy = sess.run([self.merged, self.accuracy], feed_dict=feed_dict)
+        self.writer.add_summary(summary, iteration)
+        csv_writer.writerow([iteration, accuracy])
 
     def update_fisher_full_batch(self, sess, dataset):
         dataset._index_in_epoch = 0  # ensures that all training examples are included without repetitions

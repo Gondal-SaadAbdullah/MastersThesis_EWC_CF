@@ -96,13 +96,11 @@ def train():
     def feed_dict(train, i):
         if train:
             xs, ys = dataSetTrain.next_batch(FLAGS.batch_size)
-            k_h = FLAGS.dropout_hidden
-            k_i = FLAGS.dropout_input
+            k = FLAGS.dropout
         else:
             xs, ys = dataSetTest.images, dataSetTest.labels
-            k_h = 1.0
-            k_i = 1.0
-        return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+            k = 1.0
+        return {x: xs, y_: ys, global_step: i, keep_prob: k, }
 
     # weights initialization
     def weight_variable(shape, stddev,name="W"):
@@ -113,13 +111,25 @@ def train():
     def bias_variable(shape,name="b"):
         initial = tf.zeros(shape)
         return tf.Variable(initial,name=name)
-
-    # define a fully connected layer
-    def fc_layer(input, channels_in, channels_out, stddev, name='fc'):
+    # define a 2d convolutional layer
+    def conv_layer(input, channels_in, channels_out, name='conv'):
         with tf.name_scope(name):
             with tf.name_scope('weights'):
-                W = weight_variable([channels_in,
-                                         channels_out], stddev)
+                W = weight_variable([5, 5, channels_in, channels_out])
+            with tf.name_scope('biases'):
+                b = bias_variable([channels_out])
+            conv = tf.nn.conv2d(input, W, strides=[1, 1, 1, 1], padding='SAME')
+            act = tf.nn.relu(conv + b)
+            tf.summary.histogram("weights", W)
+            tf.summary.histogram("biases", b)
+            tf.summary.histogram("activation", act)
+            return act
+
+    # define a fully connected layer
+    def fc_layer(input, channels_in, channels_out, name='fc'):
+        with tf.name_scope(name):
+            with tf.name_scope('weights'):
+                W = weight_variable([channels_in, channels_out])
             with tf.name_scope('biases'):
                 b = bias_variable([channels_out])
             act = tf.nn.relu(tf.matmul(input, W) + b)
@@ -128,21 +138,23 @@ def train():
             tf.summary.histogram("activation", act)
             return act
 
-
-    # define a sotfmax linear classification layer
-    def softmax_linear(input, channels_in, channels_out, stddev, name='read'):
+    # define a readout layer
+    def ro_layer(input, channels_in, channels_out, name='read'):
         with tf.name_scope(name):
             with tf.name_scope('weights'):
-                W = weight_variable([channels_in,
-                                     channels_out], stddev, name="WMATRIX")
-                wdict[W] = W ;
+                W = weight_variable([channels_in, channels_out])
             with tf.name_scope('biases'):
-                b = bias_variable([channels_out],name="bias")
+                b = bias_variable([channels_out])
             act = tf.matmul(input, W) + b
             tf.summary.histogram("weights", W)
             tf.summary.histogram("biases", b)
             tf.summary.histogram("activation", act)
             return act
+
+    # pooling
+    def max_pool_2x2(x):
+        return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
+                              strides=[1, 2, 2, 1], padding='SAME')
 
     # Start an Interactive session
     sess = tf.InteractiveSession(config=tf.ConfigProto(log_device_placement=False))
@@ -151,66 +163,44 @@ def train():
     with tf.name_scope('input'):
         x = tf.placeholder(tf.float32, shape=[None, 784], name='x')
         y_ = tf.placeholder(tf.float32, shape=[None, 10], name='labels')
+    x_image = tf.reshape(x, [-1, 28, 28, 1])
+    tf.summary.image('input', x_image, 9)
 
     global global_step
     global_step = tf.placeholder(tf.float32, shape=[], name="step");
 
-    # apply dropout to the input layer
-    keep_prob_input = tf.placeholder(tf.float32)
-    tf.summary.scalar('dropout_input', keep_prob_input)
+    # Create the first convolutional layer
+    # convolve x_image with the weight tensor, add the bias, apply ReLu
+    h_conv1 = conv_layer(x_image, 1, 32, 'h_conv1')
+    # max pooling for first conv layer
+    h_pool1 = max_pool_2x2(h_conv1)
 
-    x_drop = tf.nn.dropout(x, keep_prob_input)
+    # Create the second convolutional layer
+    h_conv2 = conv_layer(h_pool1, 32, 64, 'h_conv2')
+    # max pooling for second conv layer
+    h_pool2 = max_pool_2x2(h_conv2)
 
-    # Create the first hidden layer
-    h_fc1 = fc_layer(x_drop, IMAGE_PIXELS, FLAGS.hidden1,
-                       1.0 / math.sqrt(float(IMAGE_PIXELS)), 'h_fc1')
+    # reshape tensor from the pooling layer into a batch of vectors
+    h_pool2_flattened = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
 
-    # Apply dropout to first hidden layer
-    keep_prob_hidden = tf.placeholder(tf.float32)
-    tf.summary.scalar('dropout_hidden', keep_prob_hidden)
+    # Create a densely Connected Layer
+    # image size reduced to 7x7, add a fully-connected layer with 1024 neurons
+    # to allow processing on the entire image.
+    h_fc1 = fc_layer(h_pool2_flattened, 7 * 7 * 64, 1024, 'h_fc1')
 
-    h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob_hidden)
+    # Apply dropout to the densely connected layer
+    with tf.name_scope('dropout'):
+        keep_prob = tf.placeholder(tf.float32)
+        tf.summary.scalar('dropout_keep_probability', keep_prob)
+        h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
-    # Create the second hidden layer
-    h_fc2 = fc_layer(h_fc1_drop, FLAGS.hidden1, FLAGS.hidden2,
-                       1.0 / math.sqrt(float(FLAGS.hidden1)), 'h_fc2')
-
-    # Apply dropout to second hidden layer
-    h_fc2_drop = tf.nn.dropout(h_fc2, keep_prob_hidden)
 
     # Create a softmax linear classification layer for the outputs
-    if FLAGS.hidden3 == -1:
-        logits_tr1 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden2)),
-                                'softmax_linear_tr1')
-        logits_tr2 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
-                                    1.0 / math.sqrt(float(FLAGS.hidden2)),
-                                    'softmax_linear_tr2')
-        logits_tr3 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
-                                    1.0 / math.sqrt(float(FLAGS.hidden2)),
-                                    'softmax_linear_tr3')
-        logits_tr4 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
-                                    1.0 / math.sqrt(float(FLAGS.hidden2)),
-                                    'softmax_linear_tr4')
-    else:
-        h_fc3 = fc_layer(h_fc2_drop, FLAGS.hidden2, FLAGS.hidden3,
-                           1.0 / math.sqrt(float(FLAGS.hidden3)), 'h_fc3')
+    logits_tr1 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr1')
+    logits_tr2 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr2')
+    logits_tr3 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr3')
+    logits_tr4 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr4')
 
-        # Apply dropout to third hidden layer
-        h_fc3_drop = tf.nn.dropout(h_fc3, keep_prob_hidden)
-
-        logits_tr1 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden3)),
-                                'softmax_linear_tr1')
-        logits_tr2 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden3)),
-                                'softmax_linear_tr2')
-        logits_tr3 = softmax_linear(h_fc3_drop, FLAGS.hidden2, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden2)),
-                                'softmax_linear_tr3')
-        logits_tr4 = softmax_linear(h_fc3_drop, FLAGS.hidden2, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden2)),
-                                'softmax_linear_tr4')
 
     # Define the loss model as a cross entropy with softmax layer 1
     with tf.name_scope('cross_entropy_tr1'):
@@ -246,25 +236,25 @@ def train():
         lr = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
                                         FLAGS.decayStep, FLAGS.decayFactor, staircase=True)
 
-        train_step_tr1 = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).minimize(cross_entropy_tr1)
+        train_step_tr1 = tf.train.AdamOptimizer(learning_rate=lr).minimize(cross_entropy_tr1)
 
     with tf.name_scope('train_tr2'):
         lr = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
                                         FLAGS.decayStep, FLAGS.decayFactor, staircase=True)
 
-        train_step_tr2 = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).minimize(cross_entropy_tr2)
+        train_step_tr2 = tf.train.AdamOptimizer(learning_rate=lr).minimize(cross_entropy_tr2)
 
     with tf.name_scope('train_tr3'):
         lr = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
                                         FLAGS.decayStep, FLAGS.decayFactor, staircase=True)
 
-        train_step_tr3 = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).minimize(cross_entropy_tr3)
+        train_step_tr3 = tf.train.AdamOptimizer(learning_rate=lr).minimize(cross_entropy_tr3)
 
     with tf.name_scope('train_tr4'):
         lr = tf.train.exponential_decay(FLAGS.learning_rate, global_step,
                                         FLAGS.decayStep, FLAGS.decayFactor, staircase=True)
 
-        train_step_tr4 = tf.train.MomentumOptimizer(learning_rate=lr, momentum=0.99).minimize(cross_entropy_tr4)
+        train_step_tr4 = tf.train.AdamOptimizer(learning_rate=lr).minimize(cross_entropy_tr4)
 
     # Compute correct prediction and accuracy
     with tf.name_scope('accuracy_tr1'):
@@ -328,7 +318,6 @@ def train():
         print('\n\nTraining on given Dataset...')
         print('____________________________________________________________')
         print(time.strftime('%X %x %Z'))
-
         for i in range(FLAGS.start_at_step, FLAGS.max_steps + FLAGS.start_at_step):
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
                 if testing_readout_layer is 1:
@@ -410,6 +399,9 @@ if __name__ == '__main__':
                         help='Specify the readout layer (1,2,3,4) for training.')
     parser.add_argument('--testing_readout_layer', type=int, default='1',
                         help='Specify the readout layer (1,2,3,4) for testing. Make sure this readout is already trained.')
+    parser.add_argument('--plot_file', type=str,
+                        default='convnet_more_layers.csv',
+                        help='Filename for csv file to plot. Give .csv extension after file name.')
     parser.add_argument('--data_dir', type=str,
                         default='/tmp/tensorflow/mnist/input_data',
                         help='Directory for storing input data')
@@ -419,9 +411,6 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoints_dir', type=str,
                         default='/tmp/tensorflow/mnist/checkpoints/',
                         help='Checkpoints log directory')
-    parser.add_argument('--plot_file', type=str,
-                        default='dropout_more_layers.csv',
-                        help='Filename for csv file to plot. Give .csv extension after file name.')
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
