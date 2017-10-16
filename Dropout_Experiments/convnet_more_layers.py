@@ -369,10 +369,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_steps', type=int, default=2000,
                         help='Number of steps to run trainer for given data set.')
 
-    parser.add_argument('--dropout_hidden', type=float, default=0.5,
-                        help='Keep probability for dropout on hidden units.')
-    parser.add_argument('--dropout_input', type=float, default=0.8,
-                        help='Keep probability for dropout on input units.')
+    parser.add_argument('--dropout', type=float, default=0.5,
+                        help='Keep probability for dropout.')
 
     parser.add_argument('--hidden1', type=int, default=128,
                         help='Number of hidden units in layer 1')
