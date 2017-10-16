@@ -12,6 +12,7 @@ import math
 import argparse
 import sys
 import time
+import csv
 
 from sys import byteorder
 from numpy import size
@@ -289,15 +290,17 @@ def train():
 
     saver = tf.train.Saver(var_list=None)
 
-    # Initialize all global variables
+    # Initialize all global variables or load model from pre-saved checkpoints
+    # Open csv file for append when model is loaded, otherwise new file is created.
     if args.load_model:
         print('\nLoading Model: ', args.load_model)
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir=args.checkpoints_dir,
                                              latest_filename=args.load_model)
-
         saver.restore(sess=sess, save_path=ckpt.model_checkpoint_path)
+        writer = csv.writer(open(FLAGS.plot_file, "a"))
     else:
         tf.global_variables_initializer().run()
+        writer = csv.writer(open(FLAGS.plot_file, "wb"))
 
     with tf.name_scope("training"):
         print('\n\nTraining on given Dataset...')
@@ -315,6 +318,7 @@ def train():
                     _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict(False, i))
                 test_writer_ds.add_summary(s, i)
                 print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
+                writer.writerow([i, acc])
             else:  # record train set summaries, and run training steps
                 if training_readout_layer is 1:
                     s, _ = sess.run([merged, train_step_tr1], feed_dict(True, i))
@@ -380,6 +384,9 @@ if __name__ == '__main__':
                         help='Specify the readout layer (1,2,3,4) for training.')
     parser.add_argument('--testing_readout_layer', type=int, default='1',
                         help='Specify the readout layer (1,2,3,4) for testing. Make sure this readout is already trained.')
+    parser.add_argument('--plot_file', type=str,
+                        default='lwta_more_layers.csv',
+                        help='Filename for csv file to plot. Give .csv extension after file name.')
     parser.add_argument('--data_dir', type=str,
                         default='/tmp/tensorflow/mnist/input_data',
                         help='Directory for storing input data')

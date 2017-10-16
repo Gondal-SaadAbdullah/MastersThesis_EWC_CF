@@ -8,6 +8,7 @@ import numpy as np
 import argparse
 import sys
 import time
+import csv
 
 from sys import byteorder
 from numpy import size
@@ -17,7 +18,6 @@ from tensorflow.python.framework import dtypes
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
 from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets.mnist import dense_to_one_hot
-from hgext.histedit import action
 
 FLAGS = None
 
@@ -354,6 +354,8 @@ def train():
     print('\nTraining on DataSetTwo...')
     print('____________________________________________________________')
     print(time.strftime('%X %x %Z'))
+    writer = csv.writer(open(FLAGS.plot_file, "wb"))
+
     # Training on DataSetTwo, logging every step to investigate CF
     for i in range(FLAGS.max_steps_ds2):
         # if i % 5 == 0: # Record test-set accuracy every 5 steps
@@ -371,6 +373,7 @@ def train():
         # else: # Run training steps and record training-set accuracy
         s, _ = sess.run([merged, train_step], feed_dict_2(True))
         train_writer_ds2.add_summary(s, i)
+        writer.writerow([i, acc2])
     train_writer_ds2.close()
     test_writer_ds2.close()
     test_writer_ds1_cf.close()
@@ -409,6 +412,9 @@ if __name__ == '__main__':
                         help='Initial learning rate')
     parser.add_argument('--dropout', type=float, default=0.5,
                         help='Keep probability for training dropout.')
+    parser.add_argument('--plot_file', type=str,
+                        default='deepLearningConv.csv',
+                        help='Filename for csv file to plot. Give .csv extension after file name.')
     parser.add_argument('--data_dir', type=str, default='/tmp/tensorflow/mnist/input_data',
                         help='Directory for storing input data')
     parser.add_argument('--log_dir', type=str, default='/tmp/tensorflow/mnist/logs',

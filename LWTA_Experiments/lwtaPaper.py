@@ -12,6 +12,7 @@ import math
 import argparse
 import sys
 import time
+import csv
 
 from sys import byteorder
 from numpy import size
@@ -457,6 +458,7 @@ def train():
     print('\nTraining on DataSetTwo...')
     print('____________________________________________________________')
     print(time.strftime('%X %x %Z'))
+    writer = csv.writer(open(FLAGS.plot_file, "wb"))
     # Start training on dataSetTwo
     print (tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES))
     for i in range(FLAGS.max_steps_ds2):
@@ -474,6 +476,7 @@ def train():
                                 feed_dict=feed_dict_1(False, i))
             test_writer_ds2.add_summary(s1, i)
             print('test set 2/1 accuracy at step: %s \t \t %s/%s' % (i, acc2,acc1))
+            writer.writerow([i, acc1])
         else:  # record train set summaries, and run training steps
             s, _ = sess.run([merged, train_step_tr2], feed_dict_2(True, i))
             train_writer_ds2.add_summary(s, i)
@@ -528,7 +531,9 @@ if __name__ == '__main__':
                         help='decayStep')
     parser.add_argument('--decayFactor', type=float, default=1.,
                         help='decayFactor')
-
+    parser.add_argument('--plot_file', type=str,
+                        default='lwtaPaper.csv',
+                        help='Filename for csv file to plot. Give .csv extension after file name.')
     parser.add_argument('--dropout_hidden', type=float, default=0.5,
                         help='Keep probability for dropout on hidden units.')
     parser.add_argument('--dropout_input', type=float, default=0.8,

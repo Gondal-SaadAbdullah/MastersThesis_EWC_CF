@@ -9,6 +9,7 @@ import math
 import argparse
 import sys
 import time
+import csv
 
 from sys import byteorder
 from numpy import size
@@ -325,8 +326,6 @@ def train():
 
     test_writer_ds1_cf = tf.summary.FileWriter(FLAGS.log_dir +
                                                '/testing_ds1_cf')
-    test_writer_dsc_cf = tf.summary.FileWriter(FLAGS.log_dir +
-                                               '/testing_dsc_cf')
 
     # Initialize all global variables
     tf.global_variables_initializer().run()
@@ -391,6 +390,7 @@ def train():
     print('\nTraining on DataSetTwo...')
     print('____________________________________________________________')
     print(time.strftime('%X %x %Z'))
+    writer = csv.writer(open(FLAGS.plot_file, "wb"))
     # Start training on dataSetTwo
     for i in range(FLAGS.max_steps_ds2):
         if i % 5 == 0:  # record summaries & test-set accuracy every 5 steps
@@ -398,22 +398,17 @@ def train():
                                 feed_dict=feed_dict_2(False))
             test_writer_ds2.add_summary(s1, i)
             print('test set 2 accuracy at step: %s \t \t %s' % (i, acc1))
-            if FLAGS.exclude:
-                s3, accC = sess.run([merged, accuracy_ds1],
-                                    feed_dict=feed_dict_all(False))
-                test_writer_dsc_cf.add_summary(s3, i)
         else:  # record train set summaries, and run training steps
             s, _ = sess.run([merged, train_step_ds2], feed_dict_2(True))
             train_writer_ds2.add_summary(s, i)
             s2, acc2 = sess.run([merged, accuracy_ds1],
                                 feed_dict=feed_dict_1(False))
-            # sess.run()
             test_writer_ds1_cf.add_summary(s2, i)
+            writer.writerow([i, acc2])
+
     train_writer_ds2.close()
     test_writer_ds2.close()
     test_writer_ds1_cf.close()
-    if FLAGS.exclude:
-        test_writer_dsc_cf.close()
 
 
 def main(_):
@@ -453,6 +448,9 @@ if __name__ == '__main__':
                         help='Keep probability for dropout on hidden units.')
     parser.add_argument('--dropout_input', type=float, default=0.8,
                         help='Keep probability for dropout on input units.')
+    parser.add_argument('--plot_file', type=str,
+                        default='dropout_two_readouts.csv',
+                        help='Filename for csv file to plot. Give .csv extension after file name.')
     parser.add_argument('--data_dir', type=str,
                         default='/tmp/tensorflow/mnist/input_data',
                         help='Directory for storing input data')
