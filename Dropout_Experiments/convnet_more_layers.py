@@ -103,14 +103,15 @@ def train():
         return {x: xs, y_: ys, global_step: i, keep_prob: k, }
 
     # weights initialization
-    def weight_variable(shape, stddev,name="W"):
-        initial = tf.truncated_normal(shape, stddev=stddev)
-        return tf.Variable(initial,name=name)
+    def weight_variable(shape):
+        initial = tf.truncated_normal(shape, stddev=0.1)
+        return tf.Variable(initial)
 
     # biases initialization
-    def bias_variable(shape,name="b"):
-        initial = tf.zeros(shape)
-        return tf.Variable(initial,name=name)
+    def bias_variable(shape):
+        initial = tf.constant(0.1, shape=shape)
+        return tf.Variable(initial)
+
     # define a 2d convolutional layer
     def conv_layer(input, channels_in, channels_out, name='conv'):
         with tf.name_scope(name):
@@ -368,10 +369,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_steps', type=int, default=2000,
                         help='Number of steps to run trainer for given data set.')
 
-    parser.add_argument('--dropout_hidden', type=float, default=0.5,
-                        help='Keep probability for dropout on hidden units.')
-    parser.add_argument('--dropout_input', type=float, default=0.8,
-                        help='Keep probability for dropout on input units.')
+    parser.add_argument('--dropout', type=float, default=0.5,
+                        help='Keep probability for dropout.')
 
     parser.add_argument('--hidden1', type=int, default=128,
                         help='Number of hidden units in layer 1')
