@@ -180,7 +180,11 @@ def train():
                               strides=[1, 2, 2, 1], padding='SAME')
 
     # Start an Interactive session
-    sess = tf.InteractiveSession(config=tf.ConfigProto(log_device_placement=False))
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.log_device_placement = False;
+    # sess = tf.Session(config=config)
+    sess = tf.InteractiveSession(config=config)
 
     # Placeholder for input variables
     with tf.name_scope('input'):

@@ -169,7 +169,7 @@ def train():
     config = tf.ConfigProto()
     config.gpu_options.allow_growth=True
     config.log_device_placement=False ;
-    sess = tf.Session(config=config)
+    # sess = tf.Session(config=config)
     sess = tf.InteractiveSession(config=config)
 
     # Placeholder for input variables

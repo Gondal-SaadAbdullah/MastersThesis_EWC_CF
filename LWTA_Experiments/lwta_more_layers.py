@@ -163,7 +163,11 @@ def train():
             return act
 
     # Start an Interactive session
-    sess = tf.InteractiveSession(config=tf.ConfigProto(log_device_placement=False))
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.log_device_placement = False;
+    # sess = tf.Session(config=config)
+    sess = tf.InteractiveSession(config=config)
 
     # Placeholder for input variables
     with tf.name_scope('input'):
@@ -392,6 +396,11 @@ if __name__ == '__main__':
                         help='Provide random seed for permutation train.')
     parser.add_argument('--permuteTest', type=int, default=-1,
                         help='Provide random seed for permutation test.')
+
+    parser.add_argument('--dropout_hidden', type=float, default=0.5,
+                        help='Keep probability for dropout on hidden units.')
+    parser.add_argument('--dropout_input', type=float, default=0.8,
+                        help='Keep probability for dropout on input units.')
 
     parser.add_argument('--lwtaBlockSize', type=int, default=2,
                         help='Number of lwta blocks in all hidden layers')
