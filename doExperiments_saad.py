@@ -171,6 +171,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
 
 
 expID = sys.argv[1]
+N_files = sys.argv[2]   # number of files the experiment is divided into!
 
 scriptName = "python "+getScriptName(expID)
 #tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c", "D8-1-1", "D7-1-1-1"]  # missing D8-1-1, D7-1-1-1 for now
@@ -198,23 +199,28 @@ validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
 maxSteps = 1000 ;
-limit=2 ;
-
+limit=40 ;
+n = 0
 index=0 ;
 for t in validCombinations:
+    f = open(expID + "-part-" + str(n) + ".bash", 'a')
     print "# ",t
     print "#D1D1"
-    print (generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps))  # initial training
+    f.write(generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
     print "#D2D2"
-    print (generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps))  # retraining and eval on D2
+    f.write(generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D2
     print "#D2D1"
-    print (generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps))  # retraining andf eval on D1
+    f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining andf eval on D1
     if t[0] == "D8-1-1":
-        print (generateCommandLine(scriptName, "D3D3", t))
-        print (generateCommandLine(scriptName, "D3D1", t))
+        f.write(generateCommandLine(scriptName, "D3D3", t) + "\n")
+        f.write(generateCommandLine(scriptName, "D3D1", t) + "\n")
     elif t[0] == "D7-1-1-1":
-        print (generateCommandLine(scriptName, "D4D4", t))
-        print (generateCommandLine(scriptName, "D4D1", t))
+        f.write(generateCommandLine(scriptName, "D4D4", t) + "\n")
+        f.write(generateCommandLine(scriptName, "D4D1", t) + "\n")
+
+    n += 1
+    if n >= int(N_files):
+        n = 0
     index+=1;
     if index>=limit:
       break ;
