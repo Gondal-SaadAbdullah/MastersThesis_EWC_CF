@@ -1,3 +1,5 @@
+# 1) when doing fc there muist be no mrl experiments
+# 2) saving model file and csv nales are not unique
 import os, sys, itertools
 
 
@@ -48,9 +50,19 @@ def generateTaskString(task):
         D2 = "0 1 2 3 4 5 6 7 8 9"
     return D1, D2, D3, D4
 
+def generateUniqueId(expID,params):
+  h1 = params[3] ;
+  h2 = params[4] ;
+  if len(params) > 5:
+    h3 = params[5] ;
+  else:
+    h3=0 ;
+  return expID + "_" + params[0] + "_lr_" + str(params[1]) + "_retrainlr_"+str(params[2])+"_layers_"+str(h1)+"_"+str(h2)+"_"+str(h3) ;
+
+  
 
 # not complete!!!
-def generateCommandLine(scriptName, action, params):
+def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
 
     # create layer conf parameters
     if len(params) == 5:
@@ -58,63 +70,82 @@ def generateCommandLine(scriptName, action, params):
     else:
         nrHiddenLayers = 3
     hidden_layers = ""
+    
     for i in range(0, nrHiddenLayers):
         hidden_layers += "--hidden" + str(i + 1) + " " + str(params[3 + i]) + " "
 
     D1, D2, D3, D4 = generateTaskString(params[0])
 
-    model_name = expID + "_" + params[0] + "_lr_" + str(params[1]) + "_hidden_" + str(nrHiddenLayers)
-    print(model_name)
+    mlrExperiment = False;
+    if expID.find("MLR") != -1:
+      mlrExperiment = True;
+
+    trainingReadoutStr = " --training_readout_layer 1" ;
+    testingReadoutStr = " --testing_readout_layer 1" ;
+    if mlrExperiment == True:
+      if action=="D1D1":
+        pass ;
+      elif action=="D2D2":
+        trainingReadoutStr = " --training_readout_layer 2" ;
+        testingReadoutStr = " --testing_readout_layer 2" ;
+      elif axtion=="D2D1":
+        trainingReadoutStr = " --training_readout_layer 2" ;
+        testingReadoutStr = " --testing_readout_layer 1" ;
+
+
+
+    model_name = generateUniqueId(expID,params)
+    #print(model_name)
 
     # execString that is command to all experiments..
-    execStr = scriptName + " " + hidden_layers + "--max_steps 2000"
+    execStr = scriptName + " " + hidden_layers + "--max_steps "+str(maxSteps)+" " ;
 
     if action == "D1D1":
-        train_classes = "--train_classes " + D1 + " --training_readout_layer 1"
-        test_classes = "--test_classes " + D1 + " --testing_readout_layer 1"
-        train_lr = "--learning_rate " + str(params[1])
+        train_classes = " --train_classes " + D1 + trainingReadoutStr
+        test_classes = " --test_classes " + D1 + testingReadoutStr
+        train_lr = " --learning_rate " + str(params[1])
         if params[0] == "DP10-10":
-            execStr = execStr + "--permuteTrain 0 --permuteTest 0"
+            execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
         execStr = execStr + " " + train_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D1D1 --plot_file " + model_name + "_D1D1.csv" + " --start_at_step 0"
     elif action == "D2D2":
-        train_classes = "--train_classes " + D2 + " --training_readout_layer 2"
-        test_classes = "--test_classes " + D2 + " --testing_readout_layer 2"
-        retrain_lr = "--learning_rate " + str(params[2])
+        train_classes = " --train_classes " + D2 + trainingReadoutStr
+        test_classes = " --test_classes " + D2 + testingReadoutStr
+        retrain_lr = " --learning_rate " + str(params[2])
         if params[0] == "DP10-10":
-            execStr = execStr + "--permuteTrain 1 --permuteTest 1"
+            execStr = execStr + " --permuteTrain 1 --permuteTest 1"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D2D2" + " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D2.csv" + " --start_at_step 2000"
+                  " --save_model " + model_name + "_D2D2" + " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D2.csv" + " --start_at_step "+str(maxSteps)
     elif action == "D2D1":
-        train_classes = "--train_classes " + D2 + " --training_readout_layer 2"
-        test_classes = "--test_classes " + D1 + " --testing_readout_layer 1"
-        retrain_lr = "--learning_rate " + str(params[2])
+        train_classes = " --train_classes " + D2 + trainingReadoutStr
+        test_classes = " --test_classes " + D1 + testingReadoutStr
+        retrain_lr = " --learning_rate " + str(params[2])
         if params[0] == "DP10-10":
             execStr = execStr + "--permuteTrain 0 --permuteTest 1"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D2D1" + " --load_model " + model_name + "_D2D2 --plot_file " + model_name + "_D2D1.csv" + " --start_at_step 4000"
+                  " --save_model " + model_name + "_D2D1" + " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D1.csv" + " --start_at_step "+str(maxSteps)
     elif action == "D3D3":
-        train_classes = "--train_classes " + D3 + " --training_readout_layer 3"
-        test_classes = "--test_classes " + D3 + " --testing_readout_layer 3"
-        retrain_lr = "--learning_rate " + str(params[2])
+        train_classes = " --train_classes " + D3 + " --training_readout_layer 3"
+        test_classes = " --test_classes " + D3 + " --testing_readout_layer 3"
+        retrain_lr = " --learning_rate " + str(params[2])
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D3D3" + " --load_model " + model_name + "_D2D1 --plot_file " + model_name + "_D3D3.csv" + " --start_at_step 6000"
     elif action == "D3D1":
-        train_classes = "--train_classes " + D3 + " --training_readout_layer 3"
-        test_classes = "--test_classes " + D1 + " --testing_readout_layer 1"
-        retrain_lr = "--learning_rate " + str(params[2])
+        train_classes = " --train_classes " + D3 + " --training_readout_layer 3"
+        test_classes = " --test_classes " + D1 + " --testing_readout_layer 1"
+        retrain_lr = " --learning_rate " + str(params[2])
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D3D1" + " --load_model " + model_name + "_D3D3 --plot_file " + model_name + "_D3D1.csv" + " --start_at_step 8000"
     elif action == "D4D4":
-        train_classes = "--train_classes " + D4 + " --training_readout_layer 4"
-        test_classes = "--test_classes " + D4 + " --testing_readout_layer 4"
-        retrain_lr = "--learning_rate " + str(params[2])
+        train_classes = " --train_classes " + D4 + " --training_readout_layer 4"
+        test_classes = " --test_classes " + D4 + " --testing_readout_layer 4"
+        retrain_lr = " --learning_rate " + str(params[2])
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D4D4" + " --load_model " + model_name + "_D3D1 --plot_file " + model_name + "_D4D4.csv" + " --start_at_step 10000"
     elif action == "D4D1":
-        train_classes = "--train_classes " + D4 + " --training_readout_layer 4"
-        test_classes = "--test_classes " + D1 + " --testing_readout_layer 1"
-        retrain_lr = "--learning_rate " + str(params[2])
+        train_classes = " --train_classes " + D4 + " --training_readout_layer 4"
+        test_classes = " --test_classes " + D1 + " --testing_readout_layer 1"
+        retrain_lr = " --learning_rate " + str(params[2])
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D4D1" + " --load_model " + model_name + "_D4D4 --plot_file " + model_name + "._D4D1.csv" + " --start_at_step 12000"
     else:
@@ -131,34 +162,50 @@ def generateCommandLine(scriptName, action, params):
 
 expID = sys.argv[1]
 
-scriptName = getScriptName(expID)
-tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c", "D8-1-1", "D7-1-1-1"]  # missing D8-1-1, D7-1-1-1 for now
-train_lrs = [0.01, 0.001]
-retrain_lrs = [0.001, 0.0001, 0.00001]
-layerSizes = [200, 400, 800]
+scriptName = "python "+getScriptName(expID)
+#tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c", "D8-1-1", "D7-1-1-1"]  # missing D8-1-1, D7-1-1-1 for now
+tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
+train_lrs = [0.001]
+retrain_lrs = [0.001,0.0001, 0.00001]
+layerSizes = [0,200,400,800]
 
-combinations2Layers = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, layerSizes)
-combinations3Layers = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, layerSizes, layerSizes)
+def validParams(t):
+  task,lrTrain,lrRetrain,h1,h2,h3 = t;
+  if h1==0 or h2==0:
+    return False;
+  else:
+    return True;
 
-for t in combinations2Layers:
-    print (generateCommandLine(scriptName, "D1D1", t))  # initial training
-    print (generateCommandLine(scriptName, "D2D2", t))  # retraining and eval on D2
-    print (generateCommandLine(scriptName, "D2D1", t))  # retraining andf eval on D1
+def correctParams(t):
+  task,lrTrain,lrRetrain,h1,h2,h3 = t;
+  if h3==0:
+    return (task,lrTrain,lrRetrain,h1,h2);
+  else:
+    return t ;
+
+combinations = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, layerSizes,layerSizes)
+validCombinations = [correctParams(t) for t in combinations if validParams(t)]
+#print len(validCombinations) ;
+
+maxSteps = 1000 ;
+limit=1 ;
+
+index=0 ;
+for t in validCombinations:
+    print "# ",t
+    print "#D1D1"
+    print (generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps))  # initial training
+    print "#D2D2"
+    print (generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps))  # retraining and eval on D2
+    print "#D2D1"
+    print (generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps))  # retraining andf eval on D1
     if t[0] == "D8-1-1":
         print (generateCommandLine(scriptName, "D3D3", t))
         print (generateCommandLine(scriptName, "D3D1", t))
     elif t[0] == "D7-1-1-1":
         print (generateCommandLine(scriptName, "D4D4", t))
         print (generateCommandLine(scriptName, "D4D1", t))
+    index+=1;
+    if index>=limit:
+      break ;
 
-# need to do the same for 3 layers
-for t in combinations3Layers:
-    print (generateCommandLine(scriptName, "D1D1", t))  # initial training
-    print (generateCommandLine(scriptName, "D2D2", t))  # retraining and eval on D2
-    print (generateCommandLine(scriptName, "D2D1", t))  # retraining andf eval on D1
-    if t[0] == "D8-1-1":
-        print (generateCommandLine(scriptName, "D3D3", t))
-        print (generateCommandLine(scriptName, "D3D1", t))
-    elif t[0] == "D7-1-1-1":
-        print (generateCommandLine(scriptName, "D4D4", t))
-        print (generateCommandLine(scriptName, "D4D1", t))
