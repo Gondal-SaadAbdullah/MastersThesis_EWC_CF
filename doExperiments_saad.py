@@ -167,7 +167,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         execStr = execStr + " --dropout_hidden 1 --dropout_input 1"
     
 
-    return execStr
+    return execStr.replace("\n"," ")
 
 
 expID = sys.argv[1]
@@ -194,22 +194,26 @@ def correctParams(t):
   else:
     return t ;
 
-combinations = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, layerSizes,layerSizes)
+combinations = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, layerSizes, layerSizes)
 validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
 maxSteps = 1000 ;
-limit=40 ;
+limit=40000 ;
 n = 0
 index=0 ;
+alreadyDone={}
+files = [file(expID + "-part-" + str(n) + ".bash","w") for n in xrange(0,int(N_files))] ;
 for t in validCombinations:
-    f = open(expID + "-part-" + str(n) + ".bash", 'a')
-    print "# ",t
-    print "#D1D1"
+    uniqueID = generateUniqueId(expID,t) ;
+    #print uniqueID
+    if alreadyDone.has_key(uniqueID):
+      print "CONT"
+      continue;
+    alreadyDone[uniqueID]=True;
+    f = files[n] ;
     f.write(generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
-    print "#D2D2"
     f.write(generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D2
-    print "#D2D1"
     f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining andf eval on D1
     if t[0] == "D8-1-1":
         f.write(generateCommandLine(scriptName, "D3D3", t) + "\n")
@@ -225,3 +229,6 @@ for t in validCombinations:
     if index>=limit:
       break ;
 
+for f in files:
+  f.close() ;
+#print alreadyDone

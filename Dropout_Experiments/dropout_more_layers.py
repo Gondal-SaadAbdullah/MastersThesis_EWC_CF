@@ -230,10 +230,10 @@ def train():
         logits_tr2 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden3)),
                                     'softmax_linear_tr2')
-        logits_tr3 = softmax_linear(h_fc3_drop, FLAGS.hidden2, NUM_CLASSES,
+        logits_tr3 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2)),
                                     'softmax_linear_tr3')
-        logits_tr4 = softmax_linear(h_fc3_drop, FLAGS.hidden2, NUM_CLASSES,
+        logits_tr4 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2)),
                                     'softmax_linear_tr4')
 
@@ -470,4 +470,5 @@ if __name__ == '__main__':
                         help='Filename for csv file to plot. Give .csv extension after file name.')
 
     FLAGS, unparsed = parser.parse_known_args()
+    print ("--",FLAGS)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
