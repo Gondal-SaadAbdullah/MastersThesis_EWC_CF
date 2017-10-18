@@ -121,7 +121,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         test_classes = " --test_classes " + D1 + testingReadoutStr
         retrain_lr = " --learning_rate " + str(params[2])
         if params[0] == "DP10-10":
-            execStr = execStr + "--permuteTrain 0 --permuteTest 1"
+            execStr = execStr + "--permuteTrain 1 --permuteTest 0"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D2D1" + " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D1.csv" + " --start_at_step "+str(maxSteps)
     elif action == "D3D3":
@@ -155,6 +155,11 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
     if scriptName == "fc":
         execStr = execStr + " --dropout_hidden 1 --dropout_input 1"
     elif scriptName == "conv":
+        execStr = execStr + " --dropout 1"
+    # Dropout is default in the programs, this disables dropout
+    if expID == "fc":
+        execStr = execStr + " --dropout_hidden 1 --dropout_input 1"
+    elif expID == "conv":
         execStr = execStr + " --dropout 1"
 
     return execStr
