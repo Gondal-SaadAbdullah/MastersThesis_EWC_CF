@@ -8,7 +8,7 @@ def getScriptName(expID):
         return "./Dropout_Experiments/dropout_more_layers.py"
     elif expID in ["conv", "D-conv", "conv-MRL", "D-conv-MRL"]:
         return "./Dropout_Experiments/convnet_more_layers.py"
-    elif expID in ["LWTA-fc-", "LWTA-fc-MRL"]:
+    elif expID in ["LWTA-fc", "LWTA-fc-MRL"]:
         return "./LWTA_Experiments/lwta_more_layers.py"
 
 
@@ -198,7 +198,7 @@ validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
 maxSteps = 1000 ;
-limit=1 ;
+limit=2 ;
 
 index=0 ;
 for t in validCombinations:
