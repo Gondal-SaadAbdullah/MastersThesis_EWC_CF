@@ -77,7 +77,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
     D1, D2, D3, D4 = generateTaskString(params[0])
 
     mlrExperiment = False;
-    if expID.find("MLR") != -1:
+    if expID.find("MRL") != -1:
       mlrExperiment = True;
 
     trainingReadoutStr = " --training_readout_layer 1" ;
@@ -88,7 +88,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
       elif action=="D2D2":
         trainingReadoutStr = " --training_readout_layer 2" ;
         testingReadoutStr = " --testing_readout_layer 2" ;
-      elif axtion=="D2D1":
+      elif action=="D2D1":
         trainingReadoutStr = " --training_readout_layer 2" ;
         testingReadoutStr = " --testing_readout_layer 1" ;
 
