@@ -38,52 +38,82 @@ wdict = {}
 
 
 def initDataSetsClasses():
-    args = parser.parse_args()
-    if args.train_classes[0:]:
-        labels_to_train = [int(i) for i in args.train_classes[0:]]
-
-    if args.test_classes[0:]:
-        labels_to_test = [int(i) for i in args.test_classes[0:]]
-
-    # Variable to read out the labels & data of the DataSet Object.
-    mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
-                               one_hot=False)
-
-    # MNIST labels & data for training.
-    mnistLabelsTrain = mnistData.train.labels
-    mnistDataTrain = mnistData.train.images
-
-    # MNIST labels & data for testing.
-    mnistLabelsTest = mnistData.test.labels
-    mnistDataTest = mnistData.test.images
-
-    # Filtered labels & data for training and testing.
-    labels_train_classes = np.array([mnistLabelsTrain[i] for i in xrange(0,
-                                                                        mnistLabelsTrain.shape[0]) if
-                                    mnistLabelsTrain[i]
-                                    in labels_to_train], dtype=np.uint8)
-    data_train_classes = np.array([mnistDataTrain[i, :] for i in xrange(0,
-                                                                       mnistLabelsTrain.shape[0]) if mnistLabelsTrain[i]
-                                  in labels_to_train], dtype=np.float32)
-
-    labels_test_classes = np.array([mnistLabelsTest[i] for i in xrange(0,
-                                                                       mnistLabelsTest.shape[0]) if
-                                    mnistLabelsTest[i]
-                                    in labels_to_test], dtype=np.uint8)
-    data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,
-                                                                       mnistDataTest.shape[0]) if mnistLabelsTest[i]
-                                   in labels_to_test], dtype=np.float32)
-
-
-    labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
-    labelsTestOnehot = dense_to_one_hot(labels_test_classes, 10)
 
     global dataSetTrain
-    dataSetTrain = DataSet(255. * data_train_classes,
-                           labelsTrainOnehot, reshape=False)
     global dataSetTest
-    dataSetTest = DataSet(255. * data_test_classes,
-                          labelsTestOnehot, reshape=False)
+
+    if FLAGS.permuteTrain is 0 or FLAGS.permuteTrain:
+        # Variable to read out the labels & data of the DataSet Object.
+        mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
+                                   one_hot=True)
+
+        # MNIST labels & data for training.
+        mnistLabelsTrain = mnistData.train.labels
+        mnistDataTrain = mnistData.train.images
+
+        # MNIST labels & data for testing.
+        mnistLabelsTest = mnistData.test.labels
+        mnistDataTest = mnistData.test.images
+
+        # training dataset
+        np.random.seed(FLAGS.permuteTrain)
+        permTr = np.random.permutation(mnistDataTrain.shape[1])
+        dataSetTrainPerm = mnistDataTrain[:, permTr]
+        print(dataSetTrainPerm.shape)
+        dataSetTrain = DataSet(255. * dataSetTrainPerm,
+                               mnistLabelsTrain, reshape=False)
+        # testing dataset
+        np.random.seed(FLAGS.permuteTest)
+        permTs = np.random.permutation(mnistDataTest.shape[1])
+        dataSetTestPerm = mnistDataTest[:, permTs]
+        dataSetTest = DataSet(255. * dataSetTestPerm,
+                              mnistLabelsTest, reshape=False)
+    else:
+        args = parser.parse_args()
+        if args.train_classes[0:]:
+            labels_to_train = [int(i) for i in args.train_classes[0:]]
+
+        if args.test_classes[0:]:
+            labels_to_test = [int(i) for i in args.test_classes[0:]]
+
+        # Variable to read out the labels & data of the DataSet Object.
+        mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
+                                   one_hot=False)
+
+        # MNIST labels & data for training.
+        mnistLabelsTrain = mnistData.train.labels
+        mnistDataTrain = mnistData.train.images
+
+        # MNIST labels & data for testing.
+        mnistLabelsTest = mnistData.test.labels
+        mnistDataTest = mnistData.test.images
+
+        # Filtered labels & data for training and testing.
+        labels_train_classes = np.array([mnistLabelsTrain[i] for i in xrange(0,
+                                                                             mnistLabelsTrain.shape[0]) if
+                                         mnistLabelsTrain[i]
+                                         in labels_to_train], dtype=np.uint8)
+        data_train_classes = np.array([mnistDataTrain[i, :] for i in xrange(0,
+                                                                            mnistLabelsTrain.shape[0]) if
+                                       mnistLabelsTrain[i]
+                                       in labels_to_train], dtype=np.float32)
+
+        labels_test_classes = np.array([mnistLabelsTest[i] for i in xrange(0,
+                                                                           mnistLabelsTest.shape[0]) if
+                                        mnistLabelsTest[i]
+                                        in labels_to_test], dtype=np.uint8)
+        data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,
+                                                                          mnistDataTest.shape[0]) if mnistLabelsTest[i]
+                                      in labels_to_test], dtype=np.float32)
+
+        labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
+        labelsTestOnehot = dense_to_one_hot(labels_test_classes, 10)
+
+
+        dataSetTrain = DataSet(255. * data_train_classes,
+                               labelsTrainOnehot, reshape=False)
+        dataSetTest = DataSet(255. * data_test_classes,
+                              labelsTestOnehot, reshape=False)
 
 def train():
 
@@ -307,10 +337,10 @@ def train():
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir=args.checkpoints_dir,
                                              latest_filename=args.load_model)
         saver.restore(sess=sess, save_path=ckpt.model_checkpoint_path)
-        writer = csv.writer(open(FLAGS.plot_file, "a"))
+        # writer = csv.writer(open(FLAGS.plot_file, "a"))
     else:
         tf.global_variables_initializer().run()
-        writer = csv.writer(open(FLAGS.plot_file, "wb"))
+    writer = csv.writer(open(FLAGS.plot_file, "wb"))
 
     with tf.name_scope("training"):
         print('\n\nTraining on given Dataset...')
@@ -367,6 +397,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--max_steps', type=int, default=2000,
                         help='Number of steps to run trainer for given data set.')
+
+    parser.add_argument('--permuteTrain', type=int,
+                        help='Provide random seed for permutation train.')
+    parser.add_argument('--permuteTest', type=int,
+                        help='Provide random seed for permutation test.')
 
     parser.add_argument('--lwtaBlockSize', type=int, default=2,
                         help='Number of lwta blocks in all hidden layers')

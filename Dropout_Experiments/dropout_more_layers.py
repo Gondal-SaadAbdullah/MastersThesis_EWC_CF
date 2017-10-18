@@ -38,55 +38,88 @@ wdict = {}
 
 
 def initDataSetsClasses():
-    args = parser.parse_args()
-    if args.train_classes[0:]:
-        labels_to_train = [int(i) for i in args.train_classes[0:]]
 
-    if args.test_classes[0:]:
-        labels_to_test = [int(i) for i in args.test_classes[0:]]
-
-    # Variable to read out the labels & data of the DataSet Object.
-    mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
-                               one_hot=False)
-
-    # MNIST labels & data for training.
-    mnistLabelsTrain = mnistData.train.labels
-    mnistDataTrain = mnistData.train.images
-
-    # MNIST labels & data for testing.
-    mnistLabelsTest = mnistData.test.labels
-    mnistDataTest = mnistData.test.images
-
-    # Filtered labels & data for training and testing.
-    labels_train_classes = np.array([mnistLabelsTrain[i] for i in xrange(0,
-                                                                        mnistLabelsTrain.shape[0]) if
-                                    mnistLabelsTrain[i]
-                                    in labels_to_train], dtype=np.uint8)
-    data_train_classes = np.array([mnistDataTrain[i, :] for i in xrange(0,
-                                                                       mnistLabelsTrain.shape[0]) if mnistLabelsTrain[i]
-                                  in labels_to_train], dtype=np.float32)
-
-    labels_test_classes = np.array([mnistLabelsTest[i] for i in xrange(0,
-                                                                       mnistLabelsTest.shape[0]) if
-                                    mnistLabelsTest[i]
-                                    in labels_to_test], dtype=np.uint8)
-    data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,
-                                                                       mnistDataTest.shape[0]) if mnistLabelsTest[i]
-                                   in labels_to_test], dtype=np.float32)
-
-
-    labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
-    labelsTestOnehot = dense_to_one_hot(labels_test_classes, 10)
 
     global dataSetTrain
-    dataSetTrain = DataSet(255. * data_train_classes,
-                           labelsTrainOnehot, reshape=False)
     global dataSetTest
-    dataSetTest = DataSet(255. * data_test_classes,
-                          labelsTestOnehot, reshape=False)
+
+    if FLAGS.permuteTrain is 0 or FLAGS.permuteTrain:
+        # Variable to read out the labels & data of the DataSet Object.
+        mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
+                                   one_hot=True)
+
+        # MNIST labels & data for training.
+        mnistLabelsTrain = mnistData.train.labels
+        mnistDataTrain = mnistData.train.images
+
+        # MNIST labels & data for testing.
+        mnistLabelsTest = mnistData.test.labels
+        mnistDataTest = mnistData.test.images
+
+        # training dataset
+        np.random.seed(FLAGS.permuteTrain)
+        permTr = np.random.permutation(mnistDataTrain.shape[1])
+        dataSetTrainPerm = mnistDataTrain[:, permTr]
+        print(dataSetTrainPerm.shape)
+        dataSetTrain = DataSet(255. * dataSetTrainPerm,
+                               mnistLabelsTrain, reshape=False)
+        #testing dataset
+        np.random.seed(FLAGS.permuteTest)
+        permTs = np.random.permutation(mnistDataTest.shape[1])
+        dataSetTestPerm = mnistDataTest[:, permTs]
+        dataSetTest = DataSet(255. * dataSetTestPerm,
+                              mnistLabelsTest, reshape=False)
+
+    else:
+
+        args = parser.parse_args()
+        if args.train_classes[0:]:
+            labels_to_train = [int(i) for i in args.train_classes[0:]]
+
+        if args.test_classes[0:]:
+            labels_to_test = [int(i) for i in args.test_classes[0:]]
+
+        # Variable to read out the labels & data of the DataSet Object.
+        mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
+                                   one_hot=False)
+
+        # MNIST labels & data for training.
+        mnistLabelsTrain = mnistData.train.labels
+        mnistDataTrain = mnistData.train.images
+
+        # MNIST labels & data for testing.
+        mnistLabelsTest = mnistData.test.labels
+        mnistDataTest = mnistData.test.images
+
+
+        # Filtered labels & data for training and testing.
+        labels_train_classes = np.array([mnistLabelsTrain[i] for i in xrange(0,
+                                                                             mnistLabelsTrain.shape[0]) if
+                                         mnistLabelsTrain[i]
+                                         in labels_to_train], dtype=np.uint8)
+        data_train_classes = np.array([mnistDataTrain[i, :] for i in xrange(0,
+                                                                            mnistLabelsTrain.shape[0]) if
+                                       mnistLabelsTrain[i]
+                                       in labels_to_train], dtype=np.float32)
+
+        labels_test_classes = np.array([mnistLabelsTest[i] for i in xrange(0,
+                                                                           mnistLabelsTest.shape[0]) if
+                                        mnistLabelsTest[i]
+                                        in labels_to_test], dtype=np.uint8)
+        data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,
+                                                                          mnistDataTest.shape[0]) if mnistLabelsTest[i]
+                                      in labels_to_test], dtype=np.float32)
+
+        labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
+        labelsTestOnehot = dense_to_one_hot(labels_test_classes, 10)
+
+        dataSetTrain = DataSet(255. * data_train_classes,
+                               labelsTrainOnehot, reshape=False)
+        dataSetTest = DataSet(255. * data_test_classes,
+                              labelsTestOnehot, reshape=False)
+
 
 def train():
-
     args = parser.parse_args()
     training_readout_layer = args.training_readout_layer
     testing_readout_layer = args.testing_readout_layer
@@ -105,21 +138,21 @@ def train():
         return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
 
     # weights initialization
-    def weight_variable(shape, stddev,name="W"):
+    def weight_variable(shape, stddev, name="W"):
         initial = tf.truncated_normal(shape, stddev=stddev)
-        return tf.Variable(initial,name=name)
+        return tf.Variable(initial, name=name)
 
     # biases initialization
-    def bias_variable(shape,name="b"):
+    def bias_variable(shape, name="b"):
         initial = tf.zeros(shape)
-        return tf.Variable(initial,name=name)
+        return tf.Variable(initial, name=name)
 
     # define a fully connected layer
     def fc_layer(input, channels_in, channels_out, stddev, name='fc'):
         with tf.name_scope(name):
             with tf.name_scope('weights'):
                 W = weight_variable([channels_in,
-                                         channels_out], stddev)
+                                     channels_out], stddev)
             with tf.name_scope('biases'):
                 b = bias_variable([channels_out])
             act = tf.nn.relu(tf.matmul(input, W) + b)
@@ -128,16 +161,15 @@ def train():
             tf.summary.histogram("activation", act)
             return act
 
-
     # define a sotfmax linear classification layer
     def softmax_linear(input, channels_in, channels_out, stddev, name='read'):
         with tf.name_scope(name):
             with tf.name_scope('weights'):
                 W = weight_variable([channels_in,
                                      channels_out], stddev, name="WMATRIX")
-                wdict[W] = W ;
+                wdict[W] = W;
             with tf.name_scope('biases'):
-                b = bias_variable([channels_out],name="bias")
+                b = bias_variable([channels_out], name="bias")
             act = tf.matmul(input, W) + b
             tf.summary.histogram("weights", W)
             tf.summary.histogram("biases", b)
@@ -163,7 +195,7 @@ def train():
 
     # Create the first hidden layer
     h_fc1 = fc_layer(x_drop, IMAGE_PIXELS, FLAGS.hidden1,
-                       1.0 / math.sqrt(float(IMAGE_PIXELS)), 'h_fc1')
+                     1.0 / math.sqrt(float(IMAGE_PIXELS)), 'h_fc1')
 
     # Apply dropout to first hidden layer
     keep_prob_hidden = tf.placeholder(tf.float32)
@@ -173,7 +205,7 @@ def train():
 
     # Create the second hidden layer
     h_fc2 = fc_layer(h_fc1_drop, FLAGS.hidden1, FLAGS.hidden2,
-                       1.0 / math.sqrt(float(FLAGS.hidden1)), 'h_fc2')
+                     1.0 / math.sqrt(float(FLAGS.hidden1)), 'h_fc2')
 
     # Apply dropout to second hidden layer
     h_fc2_drop = tf.nn.dropout(h_fc2, keep_prob_hidden)
@@ -181,8 +213,8 @@ def train():
     # Create a softmax linear classification layer for the outputs
     if FLAGS.hidden3 == -1:
         logits_tr1 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden2)),
-                                'softmax_linear_tr1')
+                                    1.0 / math.sqrt(float(FLAGS.hidden2)),
+                                    'softmax_linear_tr1')
         logits_tr2 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2)),
                                     'softmax_linear_tr2')
@@ -194,26 +226,26 @@ def train():
                                     'softmax_linear_tr4')
     else:
         h_fc3 = fc_layer(h_fc2_drop, FLAGS.hidden2, FLAGS.hidden3,
-                           1.0 / math.sqrt(float(FLAGS.hidden3)), 'h_fc3')
+                         1.0 / math.sqrt(float(FLAGS.hidden3)), 'h_fc3')
 
         # Apply dropout to third hidden layer
         h_fc3_drop = tf.nn.dropout(h_fc3, keep_prob_hidden)
 
         logits_tr1 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden3)),
-                                'softmax_linear_tr1')
+                                    1.0 / math.sqrt(float(FLAGS.hidden3)),
+                                    'softmax_linear_tr1')
         logits_tr2 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden3)),
-                                'softmax_linear_tr2')
+                                    1.0 / math.sqrt(float(FLAGS.hidden3)),
+                                    'softmax_linear_tr2')
         logits_tr3 = softmax_linear(h_fc3_drop, FLAGS.hidden2, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden2)),
-                                'softmax_linear_tr3')
+                                    1.0 / math.sqrt(float(FLAGS.hidden2)),
+                                    'softmax_linear_tr3')
         logits_tr4 = softmax_linear(h_fc3_drop, FLAGS.hidden2, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden2)),
-                                'softmax_linear_tr4')
+                                    1.0 / math.sqrt(float(FLAGS.hidden2)),
+                                    'softmax_linear_tr4')
 
-    #logitsAll = tf.clip_by_value(logits_tr1,0,10000)+tf.clip_by_value(logits_tr2,0,10000)+tf.clip_by_value(logits_tr3,0,10000)+tf.clip_by_value(logits_tr4,0,10000) ;
-    logitsAll=logits_tr1+logits_tr2+logits_tr3+logits_tr4 ;
+    # logitsAll = tf.clip_by_value(logits_tr1,0,10000)+tf.clip_by_value(logits_tr2,0,10000)+tf.clip_by_value(logits_tr3,0,10000)+tf.clip_by_value(logits_tr4,0,10000) ;
+    logitsAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4;
     # Define the loss model as a cross entropy with softmax layer 1
     with tf.name_scope('cross_entropy_tr1'):
         diff_tr1 = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits_tr1)
@@ -314,10 +346,9 @@ def train():
     merged = tf.summary.merge_all()
 
     train_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/training_ds',
-                                             sess.graph)
+                                            sess.graph)
 
     test_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/testing_ds')
-
 
     saver = tf.train.Saver(var_list=None)
 
@@ -329,10 +360,10 @@ def train():
                                              latest_filename=args.load_model)
 
         saver.restore(sess=sess, save_path=ckpt.model_checkpoint_path)
-        writer = csv.writer(open(FLAGS.plot_file, "a"))
+        # writer = csv.writer(open(FLAGS.plot_file, "a"))
     else:
         tf.global_variables_initializer().run()
-        writer = csv.writer(open(FLAGS.plot_file, "wb"))
+    writer = csv.writer(open(FLAGS.plot_file, "wb"))
 
     with tf.name_scope("training"):
         print('\n\nTraining on given Dataset...')
@@ -342,7 +373,7 @@ def train():
         for i in range(FLAGS.start_at_step, FLAGS.max_steps + FLAGS.start_at_step):
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
                 if testing_readout_layer is 1:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr1,logits_tr1], feed_dict=feed_dict(False, i))
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is 2:
                     _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is 3:
@@ -350,7 +381,9 @@ def train():
                 elif testing_readout_layer is 4:
                     _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is -1:
-                    _lr, s, acc,l1,l2,l3,l4,lAll = sess.run([lr, merged, accuracy_trAll,logits_tr1,logits_tr2,logits_tr3,logits_tr4,logitsAll], feed_dict=feed_dict(False, i))
+                    _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
+                        [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
+                        feed_dict=feed_dict(False, i))
 
                 test_writer_ds.add_summary(s, i)
                 print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
@@ -372,10 +405,12 @@ def train():
             saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt', global_step=i,
                        latest_filename=args.save_model)
 
-def main(_):
 
+def main(_):
+    if FLAGS.permuteTrain is 0 or FLAGS.permuteTrain:
+        print("Permutation!!!!!!!!!!!!!")
     if tf.gfile.Exists(FLAGS.log_dir) and not FLAGS.load_model:
-        tf.gfile.DeleteRecursively(FLAGS.log_dir+'/..')
+        tf.gfile.DeleteRecursively(FLAGS.log_dir + '/..')
         tf.gfile.MakeDirs(FLAGS.log_dir)
     if FLAGS.train_classes:
         initDataSetsClasses()
@@ -391,6 +426,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--max_steps', type=int, default=2000,
                         help='Number of steps to run trainer for given data set.')
+
+    parser.add_argument('--permuteTrain', type=int,
+                        help='Provide random seed for permutation train.')
+    parser.add_argument('--permuteTest', type=int,
+                        help='Provide random seed for permutation test.')
 
     parser.add_argument('--dropout_hidden', type=float, default=0.5,
                         help='Keep probability for dropout on hidden units.')
@@ -438,4 +478,3 @@ if __name__ == '__main__':
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
-
