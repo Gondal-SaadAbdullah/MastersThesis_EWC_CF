@@ -38,85 +38,77 @@ wdict = {}
 
 
 def initDataSetsClasses():
-
     global dataSetTrain
     global dataSetTest
 
-    if FLAGS.permuteTrain is 0 or FLAGS.permuteTrain:
-        # Variable to read out the labels & data of the DataSet Object.
-        mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
-                                   one_hot=True)
+    print(FLAGS.train_classes, FLAGS.test_classes)
+    # Variable to read out the labels & data of the DataSet Object.
+    mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
+                               one_hot=True)
+    # MNIST labels & data for training.
+    mnistLabelsTrain = mnistData.train.labels
+    mnistDataTrain = mnistData.train.images
 
-        # MNIST labels & data for training.
-        mnistLabelsTrain = mnistData.train.labels
-        mnistDataTrain = mnistData.train.images
+    # MNIST labels & data for testing.
+    mnistLabelsTest = mnistData.test.labels
+    mnistDataTest = mnistData.test.images
+    print("LABELS", mnistLabelsTest.shape, mnistLabelsTrain.shape)
 
-        # MNIST labels & data for testing.
-        mnistLabelsTest = mnistData.test.labels
-        mnistDataTest = mnistData.test.images
-
+    if FLAGS.permuteTrain != -1:
         # training dataset
         np.random.seed(FLAGS.permuteTrain)
         permTr = np.random.permutation(mnistDataTrain.shape[1])
-        dataSetTrainPerm = mnistDataTrain[:, permTr]
-        print(dataSetTrainPerm.shape)
-        dataSetTrain = DataSet(255. * dataSetTrainPerm,
-                               mnistLabelsTrain, reshape=False)
+        mnistDataTrainPerm = mnistDataTrain[:, permTr]
+        mnistDataTrain = mnistDataTrainPerm;
+        # dataSetTrain = DataSet(255. * dataSetTrainPerm,
+        #                       mnistLabelsTrain, reshape=False)
+    if FLAGS.permuteTest != -1:
         # testing dataset
         np.random.seed(FLAGS.permuteTest)
         permTs = np.random.permutation(mnistDataTest.shape[1])
-        dataSetTestPerm = mnistDataTest[:, permTs]
-        dataSetTest = DataSet(255. * dataSetTestPerm,
-                              mnistLabelsTest, reshape=False)
-    else:
-        args = parser.parse_args()
-        if args.train_classes[0:]:
-            labels_to_train = [int(i) for i in args.train_classes[0:]]
+        mnistDataTestPerm = mnistDataTest[:, permTs]
+        # dataSetTest = DataSet(255. * dataSetTestPerm,
+        #                      mnistLabelsTest, reshape=False)
+        mnistDataTest = mnistDataTestPerm;
 
-        if args.test_classes[0:]:
-            labels_to_test = [int(i) for i in args.test_classes[0:]]
+    if True:
+        # args = parser.parse_args()
+        print(FLAGS.train_classes, FLAGS.test_classes)
+        if FLAGS.train_classes[0:]:
+            labels_to_train = [int(i) for i in FLAGS.train_classes[0:]]
 
-        # Variable to read out the labels & data of the DataSet Object.
-        mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
-                                   one_hot=False)
-
-        # MNIST labels & data for training.
-        mnistLabelsTrain = mnistData.train.labels
-        mnistDataTrain = mnistData.train.images
-
-        # MNIST labels & data for testing.
-        mnistLabelsTest = mnistData.test.labels
-        mnistDataTest = mnistData.test.images
+        if FLAGS.test_classes[0:]:
+            labels_to_test = [int(i) for i in FLAGS.test_classes[0:]]
 
         # Filtered labels & data for training and testing.
-        labels_train_classes = np.array([mnistLabelsTrain[i] for i in xrange(0,
-                                                                             mnistLabelsTrain.shape[0]) if
-                                         mnistLabelsTrain[i]
+        labels_train_classes = np.array([mnistLabelsTrain[i].argmax() for i in xrange(0,
+                                                                                      mnistLabelsTrain.shape[0]) if
+                                         mnistLabelsTrain[i].argmax()
                                          in labels_to_train], dtype=np.uint8)
         data_train_classes = np.array([mnistDataTrain[i, :] for i in xrange(0,
                                                                             mnistLabelsTrain.shape[0]) if
-                                       mnistLabelsTrain[i]
+                                       mnistLabelsTrain[i].argmax()
                                        in labels_to_train], dtype=np.float32)
 
-        labels_test_classes = np.array([mnistLabelsTest[i] for i in xrange(0,
-                                                                           mnistLabelsTest.shape[0]) if
-                                        mnistLabelsTest[i]
+        labels_test_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,
+                                                                                    mnistLabelsTest.shape[0]) if
+                                        mnistLabelsTest[i].argmax()
                                         in labels_to_test], dtype=np.uint8)
         data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,
-                                                                          mnistDataTest.shape[0]) if mnistLabelsTest[i]
+                                                                          mnistDataTest.shape[0]) if
+                                      mnistLabelsTest[i].argmax()
                                       in labels_to_test], dtype=np.float32)
 
         labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
         labelsTestOnehot = dense_to_one_hot(labels_test_classes, 10)
-
 
         dataSetTrain = DataSet(255. * data_train_classes,
                                labelsTrainOnehot, reshape=False)
         dataSetTest = DataSet(255. * data_test_classes,
                               labelsTestOnehot, reshape=False)
 
-def train():
 
+def train():
     args = parser.parse_args()
     training_readout_layer = args.training_readout_layer
     testing_readout_layer = args.testing_readout_layer
@@ -131,14 +123,14 @@ def train():
         return {x: xs, y_: ys, global_step: i}
 
     # weights initialization
-    def weight_variable(shape, stddev,name="W"):
+    def weight_variable(shape, stddev, name="W"):
         initial = tf.truncated_normal(shape, stddev=stddev)
-        return tf.Variable(initial,name=name)
+        return tf.Variable(initial, name=name)
 
     # biases initialization
-    def bias_variable(shape,name="b"):
+    def bias_variable(shape, name="b"):
         initial = tf.zeros(shape)
-        return tf.Variable(initial,name=name)
+        return tf.Variable(initial, name=name)
 
     # careful: actual output size is channels_out*blockSize
     def lwta_layer(input, channels_in, channels_out, blockSize, stddev, name='lwta'):
@@ -161,9 +153,9 @@ def train():
             with tf.name_scope('weights'):
                 W = weight_variable([channels_in,
                                      channels_out], stddev, name="WMATRIX")
-                wdict[W] = W ;
+                wdict[W] = W;
             with tf.name_scope('biases'):
-                b = bias_variable([channels_out],name="bias")
+                b = bias_variable([channels_out], name="bias")
             act = tf.matmul(input, W) + b
             tf.summary.histogram("weights", W)
             tf.summary.histogram("biases", b)
@@ -181,7 +173,6 @@ def train():
     global global_step
     global_step = tf.placeholder(tf.float32, shape=[], name="step");
 
-
     # Create the first hidden layer
     h_fc1 = lwta_layer(x, IMAGE_PIXELS, FLAGS.hidden1, FLAGS.lwtaBlockSize,
                        1.0 / math.sqrt(float(IMAGE_PIXELS)), 'h_lwta1')
@@ -193,8 +184,8 @@ def train():
     # Create a softmax linear classification layer for the outputs
     if FLAGS.hidden3 == -1:
         logits_tr1 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
-                                'softmax_linear_tr1')
+                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr1')
         logits_tr2 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
                                     'softmax_linear_tr2')
@@ -209,20 +200,20 @@ def train():
                            1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)), 'h_lwta3')
 
         logits_tr1 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
-                                'softmax_linear_tr1')
+                                    1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr1')
         logits_tr2 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
-                                'softmax_linear_tr2')
+                                    1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr2')
         logits_tr3 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
-                                'softmax_linear_tr3')
+                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr3')
         logits_tr4 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
-                                1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
-                                'softmax_linear_tr4')
+                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr4')
 
-    logits_trAll = logits_tr1+logits_tr2+logits_tr3+logits_tr4 ;
- 
+    logits_trAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4;
+
     # Define the loss model as a cross entropy with softmax layer 1
     with tf.name_scope('cross_entropy_tr1'):
         diff_tr1 = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits_tr1)
@@ -323,10 +314,9 @@ def train():
     merged = tf.summary.merge_all()
 
     train_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/training_ds',
-                                             sess.graph)
+                                            sess.graph)
 
     test_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/testing_ds')
-
 
     saver = tf.train.Saver(var_list=None)
 
@@ -378,10 +368,10 @@ def train():
             saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt', global_step=i,
                        latest_filename=args.save_model)
 
-def main(_):
 
+def main(_):
     if tf.gfile.Exists(FLAGS.log_dir) and not FLAGS.load_model:
-        tf.gfile.DeleteRecursively(FLAGS.log_dir+'/..')
+        tf.gfile.DeleteRecursively(FLAGS.log_dir + '/..')
         tf.gfile.MakeDirs(FLAGS.log_dir)
     if FLAGS.train_classes:
         initDataSetsClasses()
@@ -398,9 +388,9 @@ if __name__ == '__main__':
     parser.add_argument('--max_steps', type=int, default=2000,
                         help='Number of steps to run trainer for given data set.')
 
-    parser.add_argument('--permuteTrain', type=int,
+    parser.add_argument('--permuteTrain', type=int, default=-1,
                         help='Provide random seed for permutation train.')
-    parser.add_argument('--permuteTest', type=int,
+    parser.add_argument('--permuteTest', type=int, default=-1,
                         help='Provide random seed for permutation test.')
 
     parser.add_argument('--lwtaBlockSize', type=int, default=2,
@@ -446,4 +436,3 @@ if __name__ == '__main__':
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
-
