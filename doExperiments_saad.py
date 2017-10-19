@@ -187,7 +187,11 @@ scriptName = "python "+getScriptName(expID)
 tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
 train_lrs = [0.001]
 retrain_lrs = [0.001,0.0001, 0.00001]
-layerSizes = [0,200,400,800]
+# layerSizes = [0,200,400,800]
+if expID.find("conv") != -1:
+    layerSizes = [1]
+else:
+    layerSizes = [0,200,400,800]
 
 def validParams(t):
   task,lrTrain,lrRetrain,h1,h2,h3 = t;
