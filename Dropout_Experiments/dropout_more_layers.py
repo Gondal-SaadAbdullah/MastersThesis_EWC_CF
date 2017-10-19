@@ -231,10 +231,10 @@ def train():
                                     1.0 / math.sqrt(float(FLAGS.hidden3)),
                                     'softmax_linear_tr2')
         logits_tr3 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
-                                    1.0 / math.sqrt(float(FLAGS.hidden2)),
+                                    1.0 / math.sqrt(float(FLAGS.hidden3)),
                                     'softmax_linear_tr3')
         logits_tr4 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
-                                    1.0 / math.sqrt(float(FLAGS.hidden2)),
+                                    1.0 / math.sqrt(float(FLAGS.hidden3)),
                                     'softmax_linear_tr4')
 
     # logitsAll = tf.clip_by_value(logits_tr1,0,10000)+tf.clip_by_value(logits_tr2,0,10000)+tf.clip_by_value(logits_tr3,0,10000)+tf.clip_by_value(logits_tr4,0,10000) ;

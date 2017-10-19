@@ -207,8 +207,8 @@ combinations = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, laye
 validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
-maxSteps = 1000 ;
-limit=40000 ;
+maxSteps = 150 ;
+limit=4 ;
 n = 0
 index=0 ;
 alreadyDone={}
