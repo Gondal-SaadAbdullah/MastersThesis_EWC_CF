@@ -209,10 +209,10 @@ def train():
         logits_tr2 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
                                     'softmax_linear_tr2')
-        logits_tr3 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+        logits_tr3 = softmax_linear(h_fc3, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
                                     'softmax_linear_tr3')
-        logits_tr4 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+        logits_tr4 = softmax_linear(h_fc3, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
                                     'softmax_linear_tr4')
 

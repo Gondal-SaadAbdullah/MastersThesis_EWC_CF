@@ -91,11 +91,19 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
       elif action=="D2D1":
         trainingReadoutStr = " --training_readout_layer 2" ;
         testingReadoutStr = " --testing_readout_layer 1" ;
+      if action=="D2D-1":
+        trainingReadoutStr = " --training_readout_layer 2" ;
+        testingReadoutStr = " --testing_readout_layer -1" ;
+    else:
+      if action=="D2D-1":
+        trainingReadoutStr = " --training_readout_layer 1" ;
+        testingReadoutStr = " --testing_readout_layer -1" ;
+
 
 
 
     model_name = generateUniqueId(expID,params)
-    #print(model_name)
+    print(model_name)
 
     # execString that is command to all experiments..
     execStr = scriptName + " " + hidden_layers + "--max_steps "+str(maxSteps)+" " ;
@@ -116,14 +124,15 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
             execStr = execStr + " --permuteTrain 1 --permuteTest 1"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D2D2" + " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D2.csv" + " --start_at_step "+str(maxSteps)
-    elif action == "D2D1":
+    elif action == "D2D1" or action=="D2D-1":
+        supp = "_"+action ;
         train_classes = " --train_classes " + D2 + trainingReadoutStr
         test_classes = " --test_classes " + D1 + testingReadoutStr
         retrain_lr = " --learning_rate " + str(params[2])
         if params[0] == "DP10-10":
             execStr = execStr + "--permuteTrain 1 --permuteTest 0"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D2D1" + " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D1.csv" + " --start_at_step "+str(maxSteps)
+                  " --save_model " + model_name + supp + " --load_model " + model_name + "_D1D1 --plot_file " + model_name + supp+".csv" + " --start_at_step "+str(maxSteps)
     elif action == "D3D3":
         train_classes = " --train_classes " + D3 + " --training_readout_layer 3"
         test_classes = " --test_classes " + D3 + " --testing_readout_layer 3"
@@ -215,6 +224,7 @@ for t in validCombinations:
     f.write(generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
     f.write(generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D2
     f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining andf eval on D1
+    f.write(generateCommandLine(expID,scriptName, "D2D-1", t,maxSteps=maxSteps) + "\n")  # retraining andf eval on D1
     if t[0] == "D8-1-1":
         f.write(generateCommandLine(scriptName, "D3D3", t) + "\n")
         f.write(generateCommandLine(scriptName, "D3D1", t) + "\n")

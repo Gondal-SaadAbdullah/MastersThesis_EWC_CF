@@ -11,6 +11,9 @@ import sys,os ;
 def measureQuality(D):
   return (D[0][:,1]).max() ; # criterion: highest initial training accuracy
 
+def extractTask(runID):
+  return runID.split("_")[1] ;
+
 
 expID = sys.argv[1] ;
 csvfiles = [f for f in os.listdir("./") if (f.find(".csv") != -1 and (f.split("_"))[0]==expID ) ] ;
@@ -31,19 +34,25 @@ for f in csvfiles:
   else:
     expDict[runID][action]=f ;
 
+tasks = {}
+for key in expDict:
+  tasks[extractTask(key)] = True;
 
 
-bestRunID=None;
-bestFitness=-1 ;
+
+bestRunID={key:None for key in tasks};
+bestFitness={key:-1 for key in tasks} ;
 for key,value in expDict.iteritems():
-  if len(value.keys()) == 3:
+  if len(value.keys()) >= 3:
     print "valid exp", key ;
     fitness = measureQuality(readResults(key)) ;
-    if fitness > bestFitness:
-      bestFitness=fitness ;
-      bestRunID = key ;
+    task = extractTask(key) ;
+    if fitness> bestFitness[task]:
+      bestFitness[task]=fitness ;
+      bestRunID[task] = key ;
 
-print "Best run was", key, " with a fitness of ", bestFitness ;
+for key in tasks:
+  print "Task ", key, ": best run was", bestRunID[key], " with a fitness of ", bestFitness[key] ;
 
 
   
