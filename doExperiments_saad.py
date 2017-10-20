@@ -214,7 +214,7 @@ combinations = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, laye
 validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
-maxSteps = 1500 ;
+maxSteps = 1 ;
 limit=40000 ;
 n = 0
 index=0 ;
@@ -232,6 +232,7 @@ for t in validCombinations:
     f.write(generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D2
     f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining andf eval on D1
     f.write(generateCommandLine(expID,scriptName, "D2D-1", t,maxSteps=maxSteps) + "\n")  # retraining andf eval on D1
+    f.write("rm checkpoints/"+uniqueID+"*\n")
     if t[0] == "D8-1-1":
         f.write(generateCommandLine(scriptName, "D3D3", t) + "\n")
         f.write(generateCommandLine(scriptName, "D3D1", t) + "\n")
