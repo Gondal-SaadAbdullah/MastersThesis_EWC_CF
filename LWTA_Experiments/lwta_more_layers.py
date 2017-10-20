@@ -8,6 +8,7 @@ from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 import math
+import os ;
 
 import argparse
 import sys
@@ -43,7 +44,7 @@ def initDataSetsClasses():
 
     print(FLAGS.train_classes, FLAGS.test_classes)
     # Variable to read out the labels & data of the DataSet Object.
-    mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
+    mnistData = read_data_sets('./',
                                one_hot=True)
     # MNIST labels & data for training.
     mnistLabelsTrain = mnistData.train.labels
@@ -109,10 +110,13 @@ def initDataSetsClasses():
 
 
 def train():
-    args = parser.parse_args()
+    args = FLAGS ;
     training_readout_layer = args.training_readout_layer
     testing_readout_layer = args.testing_readout_layer
     LOG_FREQUENCY = args.test_frequency
+    if not os.path.exists("./checkpoints"):
+      os.mkdir("./checkpoints")
+
 
     # feed dictionary for dataSetOne
     def feed_dict(train, i):
@@ -209,11 +213,11 @@ def train():
         logits_tr2 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
                                     'softmax_linear_tr2')
-        logits_tr3 = softmax_linear(h_fc3, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
-                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+        logits_tr3 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
                                     'softmax_linear_tr3')
-        logits_tr4 = softmax_linear(h_fc3, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
-                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+        logits_tr4 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
                                     'softmax_linear_tr4')
 
     logits_trAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4;
@@ -330,7 +334,7 @@ def train():
         print('\nLoading Model: ', args.load_model)
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir=args.checkpoints_dir,
                                              latest_filename=args.load_model)
-        saver.restore(sess=sess, save_path=ckpt.model_checkpoint_path)
+        saver.restore(sess=sess, save_path=args.checkpoints_dir + args.load_model + '.ckpt') ;
         # writer = csv.writer(open(FLAGS.plot_file, "a"))
     else:
         tf.global_variables_initializer().run()
@@ -369,8 +373,7 @@ def train():
         test_writer_ds.close()
 
         if args.save_model:
-            saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt', global_step=i,
-                       latest_filename=args.save_model)
+            saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt')
 
 
 def main(_):
@@ -440,7 +443,7 @@ if __name__ == '__main__':
                         default='/tmp/tensorflow/mnist/logs',
                         help='Summaries log directory')
     parser.add_argument('--checkpoints_dir', type=str,
-                        default='/tmp/tensorflow/mnist/checkpoints/',
+                        default='./checkpoints/',
                         help='Checkpoints log directory')
 
     FLAGS, unparsed = parser.parse_known_args()

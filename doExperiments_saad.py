@@ -123,7 +123,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         if params[0] == "DP10-10":
             execStr = execStr + " --permuteTrain 1 --permuteTest 1"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D2D2" + " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D2.csv" + " --start_at_step "+str(maxSteps)
+                   " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D2.csv" + " --start_at_step "+str(maxSteps)
     elif action == "D2D1" or action=="D2D-1":
         supp = "_"+action ;
         train_classes = " --train_classes " + D2 + trainingReadoutStr
@@ -132,31 +132,31 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         if params[0] == "DP10-10":
             execStr = execStr + "--permuteTrain 1 --permuteTest 0"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + supp + " --load_model " + model_name + "_D1D1 --plot_file " + model_name + supp+".csv" + " --start_at_step "+str(maxSteps)
+                  " --load_model " + model_name + "_D1D1 --plot_file " + model_name + supp+".csv" + " --start_at_step "+str(maxSteps)
     elif action == "D3D3":
         train_classes = " --train_classes " + D3 + " --training_readout_layer 3"
         test_classes = " --test_classes " + D3 + " --testing_readout_layer 3"
         retrain_lr = " --learning_rate " + str(params[2])
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D3D3" + " --load_model " + model_name + "_D2D1 --plot_file " + model_name + "_D3D3.csv" + " --start_at_step 6000"
+                  " --load_model " + model_name + "_D2D1 --plot_file " + model_name + "_D3D3.csv" + " --start_at_step 6000"
     elif action == "D3D1":
         train_classes = " --train_classes " + D3 + " --training_readout_layer 3"
         test_classes = " --test_classes " + D1 + " --testing_readout_layer 1"
         retrain_lr = " --learning_rate " + str(params[2])
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D3D1" + " --load_model " + model_name + "_D3D3 --plot_file " + model_name + "_D3D1.csv" + " --start_at_step 8000"
+                  " --load_model " + model_name + "_D3D3 --plot_file " + model_name + "_D3D1.csv" + " --start_at_step 8000"
     elif action == "D4D4":
         train_classes = " --train_classes " + D4 + " --training_readout_layer 4"
         test_classes = " --test_classes " + D4 + " --testing_readout_layer 4"
         retrain_lr = " --learning_rate " + str(params[2])
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D4D4" + " --load_model " + model_name + "_D3D1 --plot_file " + model_name + "_D4D4.csv" + " --start_at_step 10000"
+                  " --load_model " + model_name + "_D3D1 --plot_file " + model_name + "_D4D4.csv" + " --start_at_step 10000"
     elif action == "D4D1":
         train_classes = " --train_classes " + D4 + " --training_readout_layer 4"
         test_classes = " --test_classes " + D1 + " --testing_readout_layer 1"
         retrain_lr = " --learning_rate " + str(params[2])
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D4D1" + " --load_model " + model_name + "_D4D4 --plot_file " + model_name + "._D4D1.csv" + " --start_at_step 12000"
+                  " --load_model " + model_name + "_D4D4 --plot_file " + model_name + "._D4D1.csv" + " --start_at_step 12000"
     else:
         return "??" + action
 
@@ -207,11 +207,14 @@ def correctParams(t):
   else:
     return t ;
 
+#def removeCheckpoints(checkpointDir,uniqueID):
+#  list = 
+
 combinations = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, layerSizes, layerSizes)
 validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
-maxSteps = 1000 ;
+maxSteps = 1500 ;
 limit=40000 ;
 n = 0
 index=0 ;
