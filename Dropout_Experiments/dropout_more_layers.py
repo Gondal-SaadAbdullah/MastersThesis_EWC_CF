@@ -13,6 +13,7 @@ import argparse
 import sys
 import time
 import csv
+import os ;
 
 from sys import byteorder
 from numpy import size
@@ -43,7 +44,7 @@ def initDataSetsClasses():
 
     print(FLAGS.train_classes, FLAGS.test_classes)
     # Variable to read out the labels & data of the DataSet Object.
-    mnistData = read_data_sets('/tmp/tensorflow/mnist/input_data',
+    mnistData = read_data_sets('./',
                                one_hot=True)
     # MNIST labels & data for training.
     mnistLabelsTrain = mnistData.train.labels
@@ -109,10 +110,13 @@ def initDataSetsClasses():
 
 
 def train():
-    args = parser.parse_args()
+    #args = parser.parse_args()
+    args = FLAGS ;
     training_readout_layer = args.training_readout_layer
     testing_readout_layer = args.testing_readout_layer
     LOG_FREQUENCY = args.test_frequency
+    if not os.path.exists("./checkpoints"):
+      os.mkdir("./checkpoints")
 
     # feed dictionary for dataSetOne
     def feed_dict(train, i):
@@ -352,7 +356,7 @@ def train():
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir=args.checkpoints_dir,
                                              latest_filename=args.load_model)
 
-        saver.restore(sess=sess, save_path=ckpt.model_checkpoint_path)
+        saver.restore(sess=sess, save_path=args.checkpoints_dir + args.load_model + '.ckpt') ;
         # writer = csv.writer(open(FLAGS.plot_file, "a"))
     else:
         tf.global_variables_initializer().run()
@@ -395,8 +399,7 @@ def train():
         test_writer_ds.close()
 
         if args.save_model:
-            saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt', global_step=i,
-                       latest_filename=args.save_model)
+            saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt')
 
 
 def main(_):
@@ -463,7 +466,7 @@ if __name__ == '__main__':
                         default='/tmp/tensorflow/mnist/logs',
                         help='Summaries log directory')
     parser.add_argument('--checkpoints_dir', type=str,
-                        default='/tmp/tensorflow/mnist/checkpoints/',
+                        default='./checkpoints/',
                         help='Checkpoints log directory')
     parser.add_argument('--plot_file', type=str,
                         default='dropout_more_layers.csv',

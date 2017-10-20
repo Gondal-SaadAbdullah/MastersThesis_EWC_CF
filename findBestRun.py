@@ -51,7 +51,7 @@ for key,value in expDict.iteritems():
       bestFitness[task]=fitness ;
       bestRunID[task] = key ;
   else:
-    print "invalid exp", key ;
+    print "invalid exp", key, len(value.keys()) ;
   
 
 for key in tasks:
