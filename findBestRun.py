@@ -27,7 +27,7 @@ for f in csvfiles:
   fields = f.replace(".csv","").split("_") ;
   action = fields[-1] ;
   runID = f.replace("_"+action+".csv","")
-  print runID,action ;
+  #print runID,action ;
   if expDict.has_key(runID)==False:
     expDict[runID]={}
     expDict[runID][action]=f ;
