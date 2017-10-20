@@ -9,12 +9,14 @@ from matplotlib.ticker import MultipleLocator
 # dim0 - iteration, dim1 - accuracy
 def readResults(modelString):
   F = [modelString+"_D1D1.csv", modelString+"_D2D2.csv",modelString+"_D2D1.csv"] ;
+  if os.path.exists(modelString+"_D2D-1.csv"):
+    F.append(modelString+"_D2D-1.csv") ;
 
   L = [file(f,"r").readlines() for f in F ]
 
   _D = [[l.strip().split(",") for l in lines if len(l)>2 ] for lines in L] ;
 
-  d = [None,None,None]
+  d = [None for i in F]
   i=0;
   for _data in _D:
     d[i] = [(float(_d[0]),float(_d[1])) for _d in _data]  
@@ -51,6 +53,9 @@ if __name__=="__main__":
   ax.plot(D[0][:,0],D[0][:,1], linewidth=3,label='D1D1')
   ax.plot(D[1][:,0],D[1][:,1], linewidth=3,label='D2D2')
   ax.plot(D[2][:,0],D[2][:,1], linewidth=3,label='D2D1')
+  if len(D)>3:
+    ax.plot(D[3][:,0],D[2][:,1], linewidth=3,label='D2D1All')
+ 
   ax.set_title (titleStr, size=25)
   ax.set_xlabel ("iteration", size=30)
   ax.set_ylabel ("test accuracy", size=30)
