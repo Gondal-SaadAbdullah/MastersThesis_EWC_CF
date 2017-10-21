@@ -440,7 +440,7 @@ if __name__ == '__main__':
                         default='/tmp/tensorflow/mnist/logs',
                         help='Summaries log directory')
     parser.add_argument('--checkpoints_dir', type=str,
-                        default='./checkpoints',
+                        default='./checkpoints/',
                         help='Checkpoints log directory')
 
     FLAGS, unparsed = parser.parse_known_args()
