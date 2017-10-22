@@ -231,6 +231,7 @@ def train():
     logits_tr2 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr2')
     logits_tr3 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr3')
     logits_tr4 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr4')
+    logits_trAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4 ;
 
     # Define the loss model as a cross entropy with softmax layer 1
     with tf.name_scope('cross_entropy_tr1'):
@@ -317,6 +318,14 @@ def train():
         with tf.name_scope('accuracy_tr4'):
             accuracy_tr4 = tf.reduce_mean(tf.cast(correct_prediction_tr4, tf.float32))
     tf.summary.scalar('accuracy_tr4', accuracy_tr4)
+    
+    # Compute correct prediction and accuracy
+    with tf.name_scope('accuracy_trAll'):
+        with tf.name_scope('correct_prediction_trAll'):
+            correct_prediction_trAll = tf.equal(tf.argmax(logits_trAll, 1), tf.argmax(y_, 1))
+        with tf.name_scope('accuracy_trAll'):
+            accuracy_trAll = tf.reduce_mean(tf.cast(correct_prediction_trAll, tf.float32))
+    tf.summary.scalar('accuracy_trAll', accuracy_trAll)    
 
     # Merge all summaries and write them out to /tmp/tensorflow/mnist/logs
     # different writers are used to separate test accuracy from train accuracy
