@@ -21,7 +21,8 @@ from numpy import size
 from tensorflow.python.framework import dtypes
 
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
-from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet tensorflow.contrib.learn.python.learn.datasets.mnist import dense_to_one_hot
+from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet 
+from tensorflow.contrib.learn.python.learn.datasets.mnist import dense_to_one_hot
 
 # from hgext.histedit import action
 
