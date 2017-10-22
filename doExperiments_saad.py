@@ -183,8 +183,20 @@ expID = sys.argv[1]
 N_files = sys.argv[2]   # number of files the experiment is divided into!
 
 scriptName = "python "+getScriptName(expID)
+# tasks
+"""
+fc
+D-fc
+D-fc-MRL
+LWTA-fc
+LWTA-fc-MRL
+conv
+conv-MRL
+D-conv
+D-conv-MRL
+"""
 #tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c", "D8-1-1", "D7-1-1-1"]  # missing D8-1-1, D7-1-1-1 for now
-tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
+tasks = ["DP5-5","DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
 train_lrs = [0.001]
 retrain_lrs = [0.001,0.0001, 0.00001]
 # layerSizes = [0,200,400,800]
@@ -214,7 +226,7 @@ combinations = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, laye
 validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
-maxSteps = 1 ;
+maxSteps = 1500 ;
 limit=40000 ;
 n = 0
 index=0 ;
