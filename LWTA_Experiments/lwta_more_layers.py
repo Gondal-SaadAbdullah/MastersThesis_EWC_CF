@@ -321,10 +321,10 @@ def train():
     # also a writer is implemented to observe CF after we trained on both sets
     merged = tf.summary.merge_all()
 
-    train_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/training_ds',
-                                            sess.graph)
+    #train_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/training_ds',
+    #                                        sess.graph)
 
-    test_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/testing_ds')
+    #test_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/testing_ds')
 
     saver = tf.train.Saver(var_list=None)
 
@@ -356,7 +356,7 @@ def train():
                     _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is -1:
                     _lr, s, acc = sess.run([lr, merged, accuracy_trAll], feed_dict=feed_dict(False, i))
-                test_writer_ds.add_summary(s, i)
+                #test_writer_ds.add_summary(s, i)
                 print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
                 writer.writerow([i, acc])
             else:  # record train set summaries, and run training steps
@@ -368,9 +368,9 @@ def train():
                     s, _ = sess.run([merged, train_step_tr3], feed_dict(True, i))
                 if training_readout_layer is 4:
                     s, _ = sess.run([merged, train_step_tr4], feed_dict(True, i))
-                train_writer_ds.add_summary(s, i)
-        train_writer_ds.close()
-        test_writer_ds.close()
+                #train_writer_ds.add_summary(s, i)
+        #train_writer_ds.close()
+        #test_writer_ds.close()
 
         if args.save_model:
             saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt')
