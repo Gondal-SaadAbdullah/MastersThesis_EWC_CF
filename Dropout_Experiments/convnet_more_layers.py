@@ -323,10 +323,10 @@ def train():
     # also a writer is implemented to observe CF after we trained on both sets
     merged = tf.summary.merge_all()
 
-    train_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/training_ds',
-                                            sess.graph)
+    #train_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/training_ds',
+    #                                        sess.graph)
 
-    test_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/testing_ds')
+    #test_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/testing_ds')
 
     saver = tf.train.Saver(var_list=None)
 
