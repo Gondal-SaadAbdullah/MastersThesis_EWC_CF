@@ -161,19 +161,19 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         return "??" + action
 
     # Dropout is default in the programs, this disables dropout
-    if scriptName.find("fc") != -1:
+    if scriptName.find("D-") == -1:
+      if scriptName.find("conv") != -1:
+        execStr = execStr + " --dropout 1"
+      else:
         execStr = execStr + " --dropout_hidden 1 --dropout_input 1"
-    elif scriptName.find("conv") != -1:
-        execStr = execStr + " --dropout 1"
-    # Dropout is default in the programs, this disables dropout
-
-
-    if expID.find("conv") != -1:
-        execStr = execStr + " --dropout 1"
-    elif expID.find("D-")!= -1:
-        execStr = execStr + " --dropout_hidden 0.8 --dropout_input 0.5"
     else:
-        execStr = execStr + " --dropout_hidden 1 --dropout_input 1"
+    # Dropout is default in the programs, this enables dropout
+
+
+      if expID.find("conv") != -1:
+        execStr = execStr + " --dropout 0.5"
+      else:
+        execStr = execStr + " --dropout_hidden 0.8 --dropout_input 0.5"
     
 
     return execStr.replace("\n"," ")
