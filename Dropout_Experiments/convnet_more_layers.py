@@ -434,10 +434,10 @@ if __name__ == '__main__':
                         default='convnet_more_layers.csv',
                         help='Filename for csv file to plot. Give .csv extension after file name.')
     parser.add_argument('--data_dir', type=str,
-                        default='/tmp/tensorflow/mnist/input_data',
+                        default='./',
                         help='Directory for storing input data')
     parser.add_argument('--log_dir', type=str,
-                        default='/tmp/tensorflow/mnist/logs',
+                        default='./logs/',
                         help='Summaries log directory')
     parser.add_argument('--checkpoints_dir', type=str,
                         default='./checkpoints/',

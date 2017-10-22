@@ -459,10 +459,10 @@ if __name__ == '__main__':
     parser.add_argument('--testing_readout_layer', type=int, default='1',
                         help='Specify the readout layer (1,2,3,4) for testing. Make sure this readout is already trained.')
     parser.add_argument('--data_dir', type=str,
-                        default='/tmp/tensorflow/mnist/input_data',
+                        default='./',
                         help='Directory for storing input data')
     parser.add_argument('--log_dir', type=str,
-                        default='/tmp/tensorflow/mnist/logs',
+                        default='./logs/',
                         help='Summaries log directory')
     parser.add_argument('--checkpoints_dir', type=str,
                         default='./checkpoints/',
