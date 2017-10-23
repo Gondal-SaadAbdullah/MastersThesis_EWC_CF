@@ -117,7 +117,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         train_classes = " --train_classes " + D1 + trainingReadoutStr
         test_classes = " --test_classes " + D1 + testingReadoutStr
         train_lr = " --learning_rate " + str(params[1])
-        if params[0] == "DP10-10":
+        if params[0]  in ["DP10-10","DP5-5"]:
             execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
         execStr = execStr + " " + train_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D1D1 --plot_file " + model_name + "_D1D1.csv" + " --start_at_step 0"
@@ -125,7 +125,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         train_classes = " --train_classes " + D2 + trainingReadoutStr
         test_classes = " --test_classes " + D2 + testingReadoutStr
         retrain_lr = " --learning_rate " + str(params[2])
-        if params[0] == "DP10-10":
+        if params[0] in ["DP10-10","DP5-5"]:
             execStr = execStr + " --permuteTrain 1 --permuteTest 1"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                    " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D2.csv" + " --start_at_step "+str(maxSteps)
@@ -134,7 +134,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         train_classes = " --train_classes " + D2 + trainingReadoutStr
         test_classes = " --test_classes " + D1 + testingReadoutStr
         retrain_lr = " --learning_rate " + str(params[2])
-        if params[0] == "DP10-10":
+        if params[0]  in ["DP10-10","DP5-5"]:
             execStr = execStr + "--permuteTrain 1 --permuteTest 0"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                   " --load_model " + model_name + "_D1D1 --plot_file " + model_name + supp+".csv" + " --start_at_step "+str(maxSteps)
