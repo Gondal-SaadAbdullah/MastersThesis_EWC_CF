@@ -231,6 +231,7 @@ def train():
     logits_tr2 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr2')
     logits_tr3 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr3')
     logits_tr4 = ro_layer(h_fc1_drop, 1024, 10, 'ro_layer_tr4')
+    logits_trAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4 ;
 
     # Define the loss model as a cross entropy with softmax layer 1
     with tf.name_scope('cross_entropy_tr1'):
@@ -317,16 +318,24 @@ def train():
         with tf.name_scope('accuracy_tr4'):
             accuracy_tr4 = tf.reduce_mean(tf.cast(correct_prediction_tr4, tf.float32))
     tf.summary.scalar('accuracy_tr4', accuracy_tr4)
+    
+    # Compute correct prediction and accuracy
+    with tf.name_scope('accuracy_trAll'):
+        with tf.name_scope('correct_prediction_trAll'):
+            correct_prediction_trAll = tf.equal(tf.argmax(logits_trAll, 1), tf.argmax(y_, 1))
+        with tf.name_scope('accuracy_trAll'):
+            accuracy_trAll = tf.reduce_mean(tf.cast(correct_prediction_trAll, tf.float32))
+    tf.summary.scalar('accuracy_trAll', accuracy_trAll)    
 
     # Merge all summaries and write them out to /tmp/tensorflow/mnist/logs
     # different writers are used to separate test accuracy from train accuracy
     # also a writer is implemented to observe CF after we trained on both sets
     merged = tf.summary.merge_all()
 
-    train_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/training_ds',
-                                            sess.graph)
+    #train_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/training_ds',
+    #                                        sess.graph)
 
-    test_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/testing_ds')
+    #test_writer_ds = tf.summary.FileWriter(FLAGS.log_dir + '/testing_ds')
 
     saver = tf.train.Saver(var_list=None)
 
@@ -357,7 +366,9 @@ def train():
                     _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is 4:
                     _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict(False, i))
-                test_writer_ds.add_summary(s, i)
+                elif testing_readout_layer is -1:
+                    _lr, s, acc = sess.run([lr, merged, accuracy_trAll], feed_dict=feed_dict(False, i))            
+                #test_writer_ds.add_summary(s, i)
                 print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
                 writer.writerow([i, acc])
             else:  # record train set summaries, and run training steps
@@ -369,9 +380,9 @@ def train():
                     s, _ = sess.run([merged, train_step_tr3], feed_dict(True, i))
                 if training_readout_layer is 4:
                     s, _ = sess.run([merged, train_step_tr4], feed_dict(True, i))
-                train_writer_ds.add_summary(s, i)
-        train_writer_ds.close()
-        test_writer_ds.close()
+                #train_writer_ds.add_summary(s, i)
+        #train_writer_ds.close()
+        #test_writer_ds.close()
 
         if args.save_model:
             saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt')
@@ -434,10 +445,10 @@ if __name__ == '__main__':
                         default='convnet_more_layers.csv',
                         help='Filename for csv file to plot. Give .csv extension after file name.')
     parser.add_argument('--data_dir', type=str,
-                        default='/tmp/tensorflow/mnist/input_data',
+                        default='./',
                         help='Directory for storing input data')
     parser.add_argument('--log_dir', type=str,
-                        default='/tmp/tensorflow/mnist/logs',
+                        default='./logs/',
                         help='Summaries log directory')
     parser.add_argument('--checkpoints_dir', type=str,
                         default='./checkpoints/',
