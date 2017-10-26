@@ -33,13 +33,13 @@ class Classifier(Network):
 
 
     def train_mod(self, sess, model_name, model_init_name, dataset, num_updates, mini_batch_size, fisher_multiplier,
-              learning_rate, testing_data_set, log_frequency=None, dataset_lagged=None):  # pass previous dataset as convenience
+              learning_rate, testing_data_set, log_frequency=None, dataset_lagged=None, plot_file="ewc.csv", start_at_step=0):  # pass previous dataset as convenience
         print('training ' + model_name + ' with weights initialized at ' + str(model_init_name))
         self.prepare_for_training(sess, model_name, model_init_name, fisher_multiplier, learning_rate)
         self.save_weights(-1, sess, model_name)
 
-        writer = csv.writer(open('ewc_exclude.csv', "wb"))
-        for i in range(num_updates):
+        writer = csv.writer(open(plot_file, "wb"))
+        for i in range(start_at_step, num_updates + start_at_step):
             self.minibatch_sgd_mod(sess, i, dataset, mini_batch_size, log_frequency, testing_data_set, writer)
         self.update_fisher_full_batch(sess, dataset)
         self.save_weights(i, sess, model_name)
@@ -81,6 +81,7 @@ class Classifier(Network):
             feed_dict.update({self.keep_prob_input: 1.0, self.keep_prob_hidden: 1.0})
         summary, accuracy = sess.run([self.merged, self.accuracy], feed_dict=feed_dict)
         self.writer.add_summary(summary, iteration)
+        print("Accuracy at step %s is: %s" %(iteration, accuracy))
         csv_writer.writerow([iteration, accuracy])
 
     def update_fisher_full_batch(self, sess, dataset):
@@ -102,6 +103,7 @@ class Classifier(Network):
         init = tf.global_variables_initializer()
         sess.run(init)
         if model_init_name:
+            print ("Loading model: " + model_init_name)
             self.restore_model(sess, model_init_name)
 
     def create_loss_and_accuracy(self):
