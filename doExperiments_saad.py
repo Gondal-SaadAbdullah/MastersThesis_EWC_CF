@@ -247,8 +247,8 @@ for t in validCombinations:
     f = files[n] ;
     f.write(generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
     f.write(generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D2
-    f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining andf eval on D1
-    f.write(generateCommandLine(expID,scriptName, "D2D-1", t,maxSteps=maxSteps) + "\n")  # retraining andf eval on D1
+    f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
+    f.write(generateCommandLine(expID,scriptName, "D2D-1", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write("rm checkpoints/"+uniqueID+"*\n")
     if t[0] == "D8-1-1":
         f.write(generateCommandLine(scriptName, "D3D3", t) + "\n")

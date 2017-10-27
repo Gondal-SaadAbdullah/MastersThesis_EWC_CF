@@ -182,7 +182,7 @@ def train():
         y_ = tf.placeholder(tf.float32, shape=[None, 10], name='labels')
 
     global global_step
-    global_step = tf.placeholder(tf.float32, shape=[], name="step");
+    global_step = tf.placeholder(tf.float32, shape=[], name="step")
 
     # apply dropout to the input layer
     keep_prob_input = tf.placeholder(tf.float32)

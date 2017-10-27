@@ -109,8 +109,11 @@ def train():
     # Start an Interactive session
     sess = tf.InteractiveSession()
 
-    classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1 , FLAGS.hidden2], apply_dropout=True)
-
+    if(FLAGS.hidden3 == -1):
+        classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1 , FLAGS.hidden2], apply_dropout=True)
+    else:
+        classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1, FLAGS.hidden2, FLAGS.hidden3],
+                                apply_dropout=True)
     print('\nTraining on DataSet started...')
     print('____________________________________________________________')
     print(time.strftime('%X %x %Z'))
