@@ -121,7 +121,7 @@ def train():
     print("Total updates: %s "%((55000 // FLAGS.batch_size) * FLAGS.epochs))
     Classifier.train_mod(classifier, sess=sess, model_name=FLAGS.save_model, model_init_name=FLAGS.load_model,
                      dataset = dataSetTrain,
-                     num_updates=(55000 // FLAGS.batch_size) * FLAGS.epochs,
+                     num_updates=(FLAGS.max_steps*FLAGS.batch_size*FLAGS.epochs // FLAGS.batch_size) * FLAGS.epochs,
                      dataset_lagged = [0],
                      mini_batch_size=FLAGS.batch_size,
                      log_frequency=LOG_FREQUENCY,
