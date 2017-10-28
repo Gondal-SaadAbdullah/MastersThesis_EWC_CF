@@ -39,7 +39,7 @@ def initDataSetsClasses():
 
     print(FLAGS.train_classes, FLAGS.test_classes)
     # Variable to read out the labels & data of the DataSet Object.
-    mnistData = read_data_sets('./',
+    mnistData = read_data_sets(FLAGS.data_dir,
                                one_hot=True)
     # MNIST labels & data for training.
     mnistLabelsTrain = mnistData.train.labels
@@ -192,10 +192,10 @@ if __name__ == '__main__':
                         default='ewc_with_options.csv',
                         help='Filename for csv file to plot. Give .csv extension after file name.')
     parser.add_argument('--data_dir', type=str,
-                        default='/tmp/tensorflow/mnist/input_data',
+                        default='./',
                         help='Directory for storing input data')
     parser.add_argument('--log_dir', type=str,
-                        default='/tmp/tensorflow/mnist/logs',
+                        default='./logs',
                         help='Summaries log directory')
     parser.add_argument('--checkpoints_dir', type=str,
                         default='./checkpoints/',
