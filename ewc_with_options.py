@@ -110,10 +110,10 @@ def train():
     sess = tf.InteractiveSession()
 
     if(FLAGS.hidden3 == -1):
-        classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1 , FLAGS.hidden2], apply_dropout=True)
+        classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1 , FLAGS.hidden2], apply_dropout=True,checkpoint_path=FLAGS.checkpoints_dir)
     else:
         classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1, FLAGS.hidden2, FLAGS.hidden3],
-                                apply_dropout=True)
+                                apply_dropout=True,checkpoint_path=FLAGS.checkpoints_dir)
     print('\nTraining on DataSet started...')
     print('____________________________________________________________')
     print(time.strftime('%X %x %Z'))
@@ -132,11 +132,11 @@ def train():
                      start_at_step = FLAGS.start_at_step
                      )
 
-    x = Classifier.test(classifier, sess=sess,
-                                    model_name=FLAGS.save_model,
-                                    batch_xs=dataSetTest.images,
-                                    batch_ys=dataSetTest.labels)
-    print (x)
+    #x = Classifier.test(classifier, sess=sess,
+    #                                   model_name=FLAGS.save_model,
+    #                                   batch_xs=dataSetTest.images,
+    #                                   batch_ys=dataSetTest.labels)
+    #print (x)
 
 
 def main(_):
