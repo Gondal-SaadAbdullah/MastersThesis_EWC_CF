@@ -178,9 +178,9 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=0.01,
                         help='Initial learning rate')
 
-    parser.add_argument('--load_model', type=str,
+    parser.add_argument('--load_model', type=str, default="", 
                         help='Load previously saved model. Leave empty if no model exists.')
-    parser.add_argument('--save_model', type=str,
+    parser.add_argument('--save_model', type=str, default="",
                         help='Provide path to save model.')
     parser.add_argument('--test_frequency', type=int, default='50',
                         help='Frequency after which a test cycle runs.')

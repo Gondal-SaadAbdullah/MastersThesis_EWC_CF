@@ -10,6 +10,8 @@ def getScriptName(expID):
         return "./Dropout_Experiments/convnet_more_layers.py"
     elif expID in ["LWTA-fc", "LWTA-fc-MRL"]:
         return "./LWTA_Experiments/lwta_more_layers.py"
+    elif expID == "EWC":
+        return "./ewc_with_options.py"
 
 
 # not complete:!!!!!!!
@@ -104,7 +106,9 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         trainingReadoutStr = " --training_readout_layer 1" ;
         testingReadoutStr = " --testing_readout_layer -1" ;
 
-
+    if expID=="EWC" and action =="D2D-1":
+      return "# no D2D-1";
+      
 
 
     model_name = generateUniqueId(expID,params)
@@ -199,6 +203,7 @@ conv
 conv-MRL
 D-conv
 D-conv-MRL
+EWC
 """
 #tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c", "D8-1-1", "D7-1-1-1"]  # missing D8-1-1, D7-1-1-1 for now
 tasks = ["DP5-5","DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now

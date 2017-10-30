@@ -126,14 +126,14 @@ class Classifier(Network):
     def save_weights(self, time_step, sess, model_name):
         if not os.path.exists(self.checkpoint_path):
             os.makedirs(self.checkpoint_path)
-        self.saver.save(sess=sess, save_path=self.checkpoint_path + model_name + '.ckpt', global_step=time_step,
-                        latest_filename=model_name)
-        print('saving model ' + model_name + ' at time step ' + str(time_step))
+        self.saver.save(sess=sess, save_path=self.checkpoint_path + "/" + model_name + '.ckpt')
+        print('saving model ' + self.checkpoint_path+"/"+model_name + '.ckpt at time step ' + str(time_step))
 
     def restore_model(self, sess, model_name):
-        ckpt = tf.train.get_checkpoint_state(checkpoint_dir=self.checkpoint_path, latest_filename=model_name)
-        self.saver.restore(sess=sess, save_path=ckpt.model_checkpoint_path)
+        #ckpt = tf.train.get_checkpoint_state(checkpoint_dir=self.checkpoint_path, latest_filename=model_name)
 
+        print ("loading..",self.checkpoint_path+"/"+model_name+".ckpt")
+        self.saver.restore(sess=sess, save_path=self.checkpoint_path+model_name+".ckpt")
     def create_feed_dict(self, batch_xs, batch_ys, keep_hidden=0.5, keep_input=0.8):
         feed_dict = {self.x: batch_xs, self.y: batch_ys}
         if self.apply_dropout:
