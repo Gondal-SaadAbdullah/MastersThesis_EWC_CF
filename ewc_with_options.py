@@ -39,7 +39,7 @@ def initDataSetsClasses():
 
     print(FLAGS.train_classes, FLAGS.test_classes)
     # Variable to read out the labels & data of the DataSet Object.
-    mnistData = read_data_sets('./',
+    mnistData = read_data_sets(FLAGS.data_dir,
                                one_hot=True)
     # MNIST labels & data for training.
     mnistLabelsTrain = mnistData.train.labels
@@ -110,10 +110,10 @@ def train():
     sess = tf.InteractiveSession()
 
     if(FLAGS.hidden3 == -1):
-        classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1 , FLAGS.hidden2], apply_dropout=True)
+        classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1 , FLAGS.hidden2], apply_dropout=True,checkpoint_path=FLAGS.checkpoints_dir)
     else:
         classifier = Classifier(num_class=10, num_features=784, fc_hidden_units=[FLAGS.hidden1, FLAGS.hidden2, FLAGS.hidden3],
-                                apply_dropout=True)
+                                apply_dropout=True,checkpoint_path=FLAGS.checkpoints_dir)
     print('\nTraining on DataSet started...')
     print('____________________________________________________________')
     print(time.strftime('%X %x %Z'))
@@ -121,7 +121,7 @@ def train():
     print("Total updates: %s "%((55000 // FLAGS.batch_size) * FLAGS.epochs))
     Classifier.train_mod(classifier, sess=sess, model_name=FLAGS.save_model, model_init_name=FLAGS.load_model,
                      dataset = dataSetTrain,
-                     num_updates=(55000 // FLAGS.batch_size) * FLAGS.epochs,
+                     num_updates=(FLAGS.max_steps*FLAGS.batch_size*FLAGS.epochs // FLAGS.batch_size) * FLAGS.epochs,
                      dataset_lagged = [0],
                      mini_batch_size=FLAGS.batch_size,
                      log_frequency=LOG_FREQUENCY,
@@ -132,11 +132,11 @@ def train():
                      start_at_step = FLAGS.start_at_step
                      )
 
-    x = Classifier.test(classifier, sess=sess,
-                                    model_name=FLAGS.save_model,
-                                    batch_xs=dataSetTest.images,
-                                    batch_ys=dataSetTest.labels)
-    print (x)
+    #x = Classifier.test(classifier, sess=sess,
+    #                                   model_name=FLAGS.save_model,
+    #                                   batch_xs=dataSetTest.images,
+    #                                   batch_ys=dataSetTest.labels)
+    #print (x)
 
 
 def main(_):
@@ -178,9 +178,9 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=0.01,
                         help='Initial learning rate')
 
-    parser.add_argument('--load_model', type=str,
+    parser.add_argument('--load_model', type=str, default="", 
                         help='Load previously saved model. Leave empty if no model exists.')
-    parser.add_argument('--save_model', type=str,
+    parser.add_argument('--save_model', type=str, default="",
                         help='Provide path to save model.')
     parser.add_argument('--test_frequency', type=int, default='50',
                         help='Frequency after which a test cycle runs.')
@@ -192,10 +192,10 @@ if __name__ == '__main__':
                         default='ewc_with_options.csv',
                         help='Filename for csv file to plot. Give .csv extension after file name.')
     parser.add_argument('--data_dir', type=str,
-                        default='/tmp/tensorflow/mnist/input_data',
+                        default='./',
                         help='Directory for storing input data')
     parser.add_argument('--log_dir', type=str,
-                        default='/tmp/tensorflow/mnist/logs',
+                        default='./logs',
                         help='Summaries log directory')
     parser.add_argument('--checkpoints_dir', type=str,
                         default='./checkpoints/',
