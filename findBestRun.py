@@ -5,7 +5,7 @@
 from __future__ import division
 from plotOneExp import readResults
 import sys, os
-import re, numpy as np
+import re, numpy as np,math
 
 
 from plotOneExp import readResults ;
@@ -30,21 +30,21 @@ def measureQualityWithAvg(D, task):
 def measureQualityWithPcnt(D, task):
     maxVal = D[1][:,1].max()
     for idx, acc_D2 in enumerate(D[1][:, 1]):
-        if acc_D2 >= maxVal * 0.95:
+        if acc_D2 >= maxVal * 0.98:
             D1_weight, D2_weight = getWeightsForAvg(task)
             acc_D1 = D[2][idx, 1]
             return np.average([acc_D1, acc_D2], weights=[D1_weight, D2_weight])
 
 def measureQualityAlex(D):
   D2D2 = D[1] ;
-  maxD2D2 = D2D2[:,1].max() * 0.95;
+  maxD2D2 = D2D2[:,1].max() * 0.99;
   for i in xrange(0,D2D2.shape[0]):
     if D2D2[i,1] >= maxD2D2:
       return w1 * D[2][i,1] + w2 * D[1][i,1];
 
 def measureQualityAlexD2D_1(D):
   D2D2 = D[1] ;
-  maxD2D2 = D2D2[:,1].max() * 0.95;
+  maxD2D2 = D2D2[:,1].max() * 0.99;
   for i in xrange(0,D2D2.shape[0]):
     if D2D2[i,1] >= maxD2D2:
       return w1 * D[3][i,1] + w2 * D[1][i,1];
@@ -123,7 +123,7 @@ for key,value in expDict.iteritems():
   
 
 for key in tasks:
-  print "Task ", key, ": best run was", bestRunID[key], " with a fitness of ", bestFitness[key], "mean/var=",sumX[key]/count[key],(sumX2[key]/count[key]-(sumX[key]/count[key])**2.) ;
+  print "Task ", key, ": best run was", bestRunID[key], " with a fitness of ", bestFitness[key], "mean/var=",sumX[key]/count[key],math.sqrt((sumX2[key]/count[key]-(sumX[key]/count[key])**2.)) ;
 
 
   

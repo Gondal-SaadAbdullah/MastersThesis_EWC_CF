@@ -42,7 +42,9 @@ def readResults(modelString, pathString):
 if __name__=="__main__":
   params = sys.argv[1].split("_") ;
   titleStr = "Model: "+params[0]+", Task: "+params[1] ;
-  pathString = sys.argv[2]
+  pathString = "./"
+  if len(sys.argv) > 2:
+    pathString = sys.argv[2]
 
   fig = plt.figure(1) ;
   ax = plt.gca() ;
