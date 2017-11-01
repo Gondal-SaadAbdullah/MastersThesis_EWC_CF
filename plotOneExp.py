@@ -7,12 +7,12 @@ from matplotlib.ticker import MultipleLocator
 
 # takes a model string and returns a list of three numpy arrays with the experimental results stored in 2D matrices
 # dim0 - iteration, dim1 - accuracy
-def readResults(modelString):
+def readResults(modelString, pathString):
   F = [modelString+"_D1D1.csv", modelString+"_D2D2.csv",modelString+"_D2D1.csv"] ;
   if os.path.exists(modelString+"_D2D-1.csv"):
     F.append(modelString+"_D2D-1.csv") ;
 
-  L = [file(f,"r").readlines() for f in F ]
+  L = [file(pathString + "/" + f,"r").readlines() for f in F]
 
   _D = [[l.strip().split(",") for l in lines if len(l)>2 ] for lines in L] ;
 
@@ -42,13 +42,13 @@ def readResults(modelString):
 if __name__=="__main__":
   params = sys.argv[1].split("_") ;
   titleStr = "Model: "+params[0]+", Task: "+params[1] ;
-
+  pathString = sys.argv[2]
 
   fig = plt.figure(1) ;
   ax = plt.gca() ;
 
 
-  D = readResults(sys.argv[1]) ;
+  D = readResults(sys.argv[1], pathString) ;
 
   ax.plot(D[0][:,0],D[0][:,1], linewidth=3,label='D1D1')
   ax.plot(D[1][:,0],D[1][:,1], linewidth=3,label='D2D2')
