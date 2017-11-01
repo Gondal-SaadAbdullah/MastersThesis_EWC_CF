@@ -54,7 +54,7 @@ if __name__=="__main__":
   ax.plot(D[1][:,0],D[1][:,1], linewidth=3,label='D2D2')
   ax.plot(D[2][:,0],D[2][:,1], linewidth=3,label='D2D1')
   if len(D)>3:
-    ax.plot(D[3][:,0],D[2][:,1], linewidth=3,label='D2D1All')
+    ax.plot(D[3][:,0],D[3][:,1], linewidth=3,label='D2D1All')
  
   ax.set_title (titleStr, size=25)
   ax.set_xlabel ("iteration", size=30)
