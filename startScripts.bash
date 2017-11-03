@@ -1,3 +1,5 @@
+killall -9 sh
+killall -9 python
 python doExperiments_saad.py ${1} ${2}
 chmod 777 *.bash
 rm nohup.out
