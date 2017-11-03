@@ -94,12 +94,16 @@ for key in expDict:
 
 bestRunID={key:None for key in tasks};
 bestFitness={key:-1 for key in tasks} ;
+worstRunID={key:None for key in tasks};
+worstFitness={key:1000. for key in tasks} ;
 sumX={key:0. for key in tasks} ;
 sumX2={key:0. for key in tasks} ;
 count={key:0. for key in tasks} ;
+validExps = 0 ;
 for key,value in expDict.iteritems():
   if len(value.keys()) >= 3:
-    print "valid exp", key ;
+    #print "valid exp", key ;
+    validExps += 1 ;
     if key.find("9-1")!= -1:
       w1 = 0.9 ; w2 = 0.1 ;
     if key.find("5-5")!= -1:
@@ -118,12 +122,17 @@ for key,value in expDict.iteritems():
     if fitness> bestFitness[task]:
       bestFitness[task]=fitness ;
       bestRunID[task] = key ;
+    if fitness< worstFitness[task]:
+      worstFitness[task]=fitness ;
+      worstRunID[task] = key ;
+
   else:
     print "invalid exp", key, len(value.keys()) ;
   
 
+print "Valid exps:", validExps
 for key in tasks:
-  print "Task ", key, ": best run was", bestRunID[key], " with a fitness of ", bestFitness[key], "mean/var=",sumX[key]/count[key],math.sqrt((sumX2[key]/count[key]-(sumX[key]/count[key])**2.)) ;
+  print "Task ", key, ": best/worst run was", bestRunID[key],"/",worstRunID[key], " with a fitness of ", bestFitness[key],      "/",worstFitness[key], "mean/var=",sumX[key]/(count[key]+0.001),math.sqrt((sumX2[key]/(count[key]+0.001)-(sumX[key]/(count[key]+0.001))**2.)) ;
 
 
   
