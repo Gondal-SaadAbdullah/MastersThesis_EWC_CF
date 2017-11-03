@@ -53,8 +53,38 @@ def generateTaskString(task):
     elif task == "DP5-5":
         D1 = "0 1 2 3 4"
         D2 = "5 6 7 8 9"
-        
+    elif task == "D5a-1a":
+        D1 = "0 1 2 3 4"
+        D2 = "5"
+    elif task == "D5a-1b":
+        D1 = "0 1 2 3 4"
+        D2 = "6"
+    elif task == "D5a-1c":
+        D1 = "0 1 2 3 4"
+        D2 = "7"
+    elif task == "D5a-1d":
+        D1 = "0 1 2 3 4"
+        D2 = "8"
+    elif task == "D5a-1e":
+        D1 = "0 1 2 3 4"
+        D2 = "9"
+    elif task == "D5b-1a":
+        D1 = "3 4 6 8 9"
+        D2 = "0"
+    elif task == "D5b-1b":
+        D1 = "3 4 6 8 9"
+        D2 = "1"
+    elif task == "D5b-1c":
+        D1 = "3 4 6 8 9"
+        D2 = "2"
+    elif task == "D5b-1d":
+        D1 = "3 4 6 8 9"
+        D2 = "5"
+    elif task == "D5b-1e":
+        D1 = "3 4 6 8 9"
+        D2 = "7"
 
+        
     return D1, D2, D3, D4
 
 def generateUniqueId(expID,params):
@@ -142,30 +172,6 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
             execStr = execStr + "--permuteTrain 1 --permuteTest 0"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                   " --load_model " + model_name + "_D1D1 --plot_file " + model_name + supp+".csv" + " --start_at_step "+str(maxSteps)
-    elif action == "D3D3":
-        train_classes = " --train_classes " + D3 + " --training_readout_layer 3"
-        test_classes = " --test_classes " + D3 + " --testing_readout_layer 3"
-        retrain_lr = " --learning_rate " + str(params[2])
-        execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --load_model " + model_name + "_D2D1 --plot_file " + model_name + "_D3D3.csv" + " --start_at_step 6000"
-    elif action == "D3D1":
-        train_classes = " --train_classes " + D3 + " --training_readout_layer 3"
-        test_classes = " --test_classes " + D1 + " --testing_readout_layer 1"
-        retrain_lr = " --learning_rate " + str(params[2])
-        execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --load_model " + model_name + "_D3D3 --plot_file " + model_name + "_D3D1.csv" + " --start_at_step 8000"
-    elif action == "D4D4":
-        train_classes = " --train_classes " + D4 + " --training_readout_layer 4"
-        test_classes = " --test_classes " + D4 + " --testing_readout_layer 4"
-        retrain_lr = " --learning_rate " + str(params[2])
-        execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --load_model " + model_name + "_D3D1 --plot_file " + model_name + "_D4D4.csv" + " --start_at_step 10000"
-    elif action == "D4D1":
-        train_classes = " --train_classes " + D4 + " --training_readout_layer 4"
-        test_classes = " --test_classes " + D1 + " --testing_readout_layer 1"
-        retrain_lr = " --learning_rate " + str(params[2])
-        execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --load_model " + model_name + "_D4D4 --plot_file " + model_name + "._D4D1.csv" + " --start_at_step 12000"
     else:
         return "??" + action
 
@@ -205,8 +211,10 @@ D-conv
 D-conv-MRL
 EWC
 """
-#tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c", "D8-1-1", "D7-1-1-1"]  # missing D8-1-1, D7-1-1-1 for now
-tasks = ["DP5-5","DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
+# mondayRuns
+#tasks = ["DP5-5","DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
+# cvprRuns
+tasks = ["D5a-1a","D5a-1b","D5a-1c","D5a-1d","D5a-1e","D5b-1a","D5b-1b","D5b-1c","D5b-1d","D5b-1e"]
 train_lrs = [0.001]
 retrain_lrs = [0.001,0.0001, 0.00001]
 # layerSizes = [0,200,400,800]
@@ -255,12 +263,6 @@ for t in validCombinations:
     f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write(generateCommandLine(expID,scriptName, "D2D-1", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write("rm checkpoints/"+uniqueID+"*\n")
-    if t[0] == "D8-1-1":
-        f.write(generateCommandLine(scriptName, "D3D3", t) + "\n")
-        f.write(generateCommandLine(scriptName, "D3D1", t) + "\n")
-    elif t[0] == "D7-1-1-1":
-        f.write(generateCommandLine(scriptName, "D4D4", t) + "\n")
-        f.write(generateCommandLine(scriptName, "D4D1", t) + "\n")
 
     n += 1
     if n >= int(N_files):
