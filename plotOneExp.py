@@ -9,7 +9,7 @@ from matplotlib.ticker import MultipleLocator
 # dim0 - iteration, dim1 - accuracy
 def readResults(modelString, pathString):
   F = [modelString+"_D1D1.csv", modelString+"_D2D2.csv",modelString+"_D2D1.csv"] ;
-  if os.path.exists(modelString+"_D2D-1.csv"):
+  if os.path.exists(pathString + "/" + modelString+"_D2D-1.csv"):
     F.append(modelString+"_D2D-1.csv") ;
 
   L = [file(pathString + "/" + f,"r").readlines() for f in F]
