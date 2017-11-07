@@ -44,6 +44,9 @@ def measureQualityAlex(D):
     if D is None:
       return 0.0 ;
     D2D2 = D[1]
+    for d in D:
+      if d.shape[0] < 20:
+        return 0.0 ;
     maxD2D2 = D2D2[:, 1].max() * 0.95
     for i in xrange(0, D2D2.shape[0]):
         if D2D2[i, 1] >= maxD2D2:
@@ -53,15 +56,29 @@ def measureQualityAlex(D):
 def measureQualityAlexD2D_1(D):
     if D is None:
       return 0.0 ;
+    for d in D:
+      if d.shape[0] < 20:
+        return 0.0 ;
     D2D2 = D[1]
     maxD2D2 = D2D2[:, 1].max() * 0.99
     for i in xrange(0, D2D2.shape[0]):
         if D2D2[i, 1] >= maxD2D2:
-            return w1 * D[3][i, 1] + w2 * D[1][i, 1]
+            if len(d) == 3:
+              return w1 * D[2][i, 1] + w2 * D[1][i, 1]
+            elif len(D)==4:
+              return w1 * D[3][i, 1] + w2 * D[1][i, 1]
+            else:
+              return 0.0 ;
+              
 
 
 def extractTask(runID):
-    return runID.split("_")[1]
+    fields = runID.split("_")
+    params=fields[2] ;
+    for f in fields[3:]:
+      params = params+"_"+f;
+
+    return fields[1],params
 
 
 def getWeightsForAvg(task):
@@ -96,10 +113,28 @@ for f in csvfiles:
     else:
         expDict[runID][action] = f
 
-tasks = {}
-for key in expDict:
-  tasks[extractTask(key)] = True;
+# expDict: keys are runIDs composes of dataset_params
+# values are lists of csv files
+# tasks contains just the dataset without the params
 
+
+tasks = {}
+taskLookup = {}
+paramLookup = {}
+taskCount = 0 ;
+paramCount=0;
+
+for key in expDict:
+  _t,_p = extractTask(key) ; 
+  tasks[_t] = True;
+  if taskLookup.has_key(_t)==False:
+     taskLookup[_t]=taskCount ;
+     taskCount+=1;
+  if paramLookup.has_key(_p)==False:
+     paramLookup[_p]=paramCount ;
+     paramCount+=1;
+
+resultMatrix = np.zeros([len(taskLookup.keys()),len(paramLookup.keys())]) ;
 
 
 bestRunID={key:None for key in tasks};
@@ -125,7 +160,9 @@ for key,value in expDict.iteritems():
     if useMRL==True:
       fitness = measureQualityAlexD2D_1(readResults(key,pathString)) ;
   
-    task = extractTask(key) ;
+    task,params = extractTask(key) ;
+    resultMatrix[taskLookup[task],paramLookup[params]] = fitness ;
+    print key,task,params
     sumX [task ]+= fitness ;
     sumX2 [task] += fitness*fitness ;
     count [task] += 1.0 ;
@@ -153,3 +190,6 @@ for key in tasks:
 
 if invalid_tasks:
     print "Some invalid experiment results for %s were omitted" % invalid_tasks
+
+np.set_printoptions(threshold=10000000,linewidth=1000000000)
+print resultMatrix.transpose()
