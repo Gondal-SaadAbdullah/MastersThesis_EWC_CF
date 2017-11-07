@@ -41,6 +41,8 @@ def measureQualityWithPcnt(D, task):
 
 
 def measureQualityAlex(D):
+    if D is None:
+      return 0.0 ;
     D2D2 = D[1]
     maxD2D2 = D2D2[:, 1].max() * 0.95
     for i in xrange(0, D2D2.shape[0]):
@@ -49,6 +51,8 @@ def measureQualityAlex(D):
 
 
 def measureQualityAlexD2D_1(D):
+    if D is None:
+      return 0.0 ;
     D2D2 = D[1]
     maxD2D2 = D2D2[:, 1].max() * 0.99
     for i in xrange(0, D2D2.shape[0]):

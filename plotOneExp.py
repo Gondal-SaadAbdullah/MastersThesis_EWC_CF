@@ -1,8 +1,6 @@
 # plots thee csv files from cf experiments into a single png file that is named according to the experiments parameters
-
-import matplotlib.pyplot as plt ;
-import os, sys, numpy as np ;
-from matplotlib.ticker import MultipleLocator
+import numpy as np ;
+import os ;
 
 
 # takes a model string and returns a list of three numpy arrays with the experimental results stored in 2D matrices
@@ -12,7 +10,10 @@ def readResults(modelString, pathString):
   if os.path.exists(pathString + "/" + modelString+"_D2D-1.csv"):
     F.append(modelString+"_D2D-1.csv") ;
 
-  L = [file(pathString + "/" + f,"r").readlines() for f in F]
+  try:
+    L = [file(pathString + "/" + f,"r").readlines() for f in F]
+  except IOError:
+    return None ;
 
   _D = [[l.strip().split(",") for l in lines if len(l)>2 ] for lines in L] ;
 
@@ -40,6 +41,10 @@ def readResults(modelString, pathString):
 
 
 if __name__=="__main__":
+  import matplotlib.pyplot as plt ;
+  import os, sys, numpy as np ;
+  from matplotlib.ticker import MultipleLocator
+  
   params = sys.argv[1].split("_") ;
   titleStr = "Model: "+params[0]+", Task: "+params[1] ;
   pathString = "./"
