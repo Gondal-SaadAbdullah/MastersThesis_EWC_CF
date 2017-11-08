@@ -406,8 +406,9 @@ def main(_):
     if FLAGS.permuteTrain is 0 or FLAGS.permuteTrain:
         print("Permutation!!!!!!!!!!!!!")
     if tf.gfile.Exists(FLAGS.log_dir) and not FLAGS.load_model:
-        tf.gfile.DeleteRecursively(FLAGS.log_dir + '/..')
-        tf.gfile.MakeDirs(FLAGS.log_dir)
+        #tf.gfile.DeleteRecursively(FLAGS.log_dir + '/..')
+        #tf.gfile.MakeDirs(FLAGS.log_dir)
+        pass ;
     if FLAGS.train_classes:
         initDataSetsClasses()
     train()
@@ -420,6 +421,11 @@ if __name__ == '__main__':
     parser.add_argument('--test_classes', type=int, nargs='*',
                         help="Take the specified Test classes from MNIST DataSet")
 
+    parser.add_argument('--test2_classes', type=int, nargs='*',
+                        help="Take the specified Test classes from MNIST DataSet. No test if empty")
+    parser.add_argument('--test3_classes', type=int, nargs='*',
+                        help="Take the specified Test classes from MNIST DataSet. No test3 if empty")
+
     parser.add_argument('--max_steps', type=int, default=2000,
                         help='Number of steps to run trainer for given data set.')
 
@@ -427,6 +433,10 @@ if __name__ == '__main__':
                         help='Provide random seed for permutation train. default: no permutation')
     parser.add_argument('--permuteTest', type=int, default=-1,
                         help='Provide random seed for permutation test.  default: no permutation')
+    parser.add_argument('--permuteTest2', type=int, default=-1,
+                        help='Provide random seed for permutation test2.  default: no permutation')
+    parser.add_argument('--permuteTest3', type=int, default=-1,
+                        help='Provide random seed for permutation test3.  default: no permutation')
 
     parser.add_argument('--dropout_hidden', type=float, default=0.5,
                         help='Keep probability for dropout on hidden units.')
@@ -459,6 +469,10 @@ if __name__ == '__main__':
                         help='Specify the readout layer (1,2,3,4) for training.')
     parser.add_argument('--testing_readout_layer', type=int, default='1',
                         help='Specify the readout layer (1,2,3,4) for testing. Make sure this readout is already trained.')
+    parser.add_argument('--testing2_readout_layer', type=int, default='1',
+                        help='Specify the readout layer (1,2,3,4) for second testing. testing2 not applied if test_classes2 is undefined ')
+    parser.add_argument('--testing3_readout_layer', type=int, default='1',
+                        help='Specify the readout layer (1,2,3,4) for third testing. testing2 not applied if test_classes2 is undefined')
     parser.add_argument('--data_dir', type=str,
                         default='./',
                         help='Directory for storing input data')
@@ -473,5 +487,6 @@ if __name__ == '__main__':
                         help='Filename for csv file to plot. Give .csv extension after file name.')
 
     FLAGS, unparsed = parser.parse_known_args()
+    print ("TEST2=",FLAGS.test2_classes) ;
     print ("--",FLAGS)
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
