@@ -40,36 +40,51 @@ def measureQualityWithPcnt(D, task):
             return np.average([acc_D1, acc_D2], weights=[D1_weight, D2_weight])
 
 
+# best performance on D1
+# quality = performance auf gesamtdatensatz zum ZP i
+def measureQualityAlexD1(D):
+    if D is None:
+      return -1.0 ;
+    for d in D:
+      if d.shape[0] < 20:
+        return -1.0 ;
+    D1D1 = D[0]
+    return D1D1[:,1].max() ;
+
+
+
+# i = wann erreich D2D2 k M seines max?
+# quality = performance auf gesamtdatensatz zum ZP i
 def measureQualityAlex(D):
     if D is None:
-      return 0.0 ;
+      return -1.0 ;
     D2D2 = D[1]
     for d in D:
       if d.shape[0] < 20:
-        return 0.0 ;
-    maxD2D2 = D2D2[:, 1].max() * 0.95
+        return -1.0 ;
+    maxD2D2 = D2D2[:, 1].max() * 0.99
     for i in xrange(0, D2D2.shape[0]):
         if D2D2[i, 1] >= maxD2D2:
             return w1 * D[2][i, 1] + w2 * D[1][i, 1]
 
 
+# i = wann erreich D2D2 k M seines max?
+# quality = performance auf gesamtdatensatz zum ZP i
+# aber: lies performance auf D1 aus Datei _D2D-1 ab
 def measureQualityAlexD2D_1(D):
     if D is None:
-      return 0.0 ;
+      return -1.0 ;
+    if len(D) < 4:
+      return -1
     for d in D:
       if d.shape[0] < 20:
-        return 0.0 ;
+        return -1.0 ;
+
     D2D2 = D[1]
     maxD2D2 = D2D2[:, 1].max() * 0.99
     for i in xrange(0, D2D2.shape[0]):
         if D2D2[i, 1] >= maxD2D2:
-            if len(d) == 3:
-              return w1 * D[2][i, 1] + w2 * D[1][i, 1]
-            elif len(D)==4:
-              return w1 * D[3][i, 1] + w2 * D[1][i, 1]
-            else:
-              return 0.0 ;
-              
+          return w1 * D[3][i, 1] + w2 * D[1][i, 1]              
 
 
 def extractTask(runID):
@@ -86,6 +101,78 @@ def getWeightsForAvg(task):
     p2 = int(re.search(r'\d+', task.split("-")[1]).group())
     return p1 / 10, p2 / 10
 
+def calcPerfMatrix(expDict,qualityMeasure,qualityMeasureMRL,useMRL=False):
+
+  tasks = {}
+  taskLookup = {}
+  paramLookup = {}
+  taskCount = 0 ;
+  paramCount=0;
+
+  for key in expDict:
+    _t,_p = extractTask(key) ; 
+    tasks[_t] = True;
+    if taskLookup.has_key(_t)==False:
+       taskLookup[_t]=taskCount ;
+       taskCount+=1;
+    if paramLookup.has_key(_p)==False:
+       paramLookup[_p]=paramCount ;
+       paramCount+=1;
+
+  resultMatrix = np.zeros([len(taskLookup.keys()),len(paramLookup.keys())]) ;
+
+
+  bestRunID={key:None for key in tasks};
+  bestFitness={key:-1 for key in tasks} ;
+  worstRunID={key:None for key in tasks};
+  worstFitness={key:1000. for key in tasks} ;
+  sumX={key:0. for key in tasks} ;
+  sumX2={key:0. for key in tasks} ;
+  count={key:0. for key in tasks} ;
+  validExps = 0 ;
+  for key,value in expDict.iteritems():
+    if len(value.keys()) >= 3:
+      #print "valid exp", key ;
+      validExps += 1 ;
+      if key.find("9-1")!= -1:
+        w1 = 0.9 ; w2 = 0.1 ;
+      if key.find("5-5")!= -1:
+        w1 = 0.5 ; w2 = 0.5 ;
+      if key.find("10-10")!= -1:
+        w1 = 0.5 ; w2 = 0.5 ;
+
+      fitness = qualityMeasure(readResults(key,pathString)) ;
+      if useMRL==True:
+        fitness = qualityMeasureMRL(readResults(key,pathString)) ;
+  
+      task,params = extractTask(key) ;
+      resultMatrix[taskLookup[task],paramLookup[params]] = fitness ;
+      """sumX [task ]+= fitness ;
+      sumX2 [task] += fitness*fitness ;
+      count [task] += 1.0 ;
+      if fitness> bestFitness[task]:
+        bestFitness[task]=fitness ;
+        bestRunID[task] = key ;
+      if fitness< worstFitness[task]:
+        worstFitness[task]=fitness ;
+        worstRunID[task] = key ;
+      """
+
+    else:
+      print "invalid exp", key, len(value.keys()) ;
+  return resultMatrix,taskLookup,paramLookup ;
+  
+def printResultMatrix(resultMatrix,taskLookup,paramLookup):
+  tpm= resultMatrix.transpose()
+  for task,taskI in taskLookup.iteritems():
+    print "%6s"%(task),
+  print
+  for param,paramI in paramLookup.iteritems():
+
+    for task,taskI in taskLookup.iteritems():
+      print "%.4f"%(resultMatrix[taskI,paramI]),
+    print param
+
 
 expID = sys.argv[1]
 pathString = "./"
@@ -96,8 +183,6 @@ if len(sys.argv) > 3:
     useMRL = True
 
 csvfiles = [f for f in os.listdir(pathString) if (f.find(".csv") != -1 and (f.split("_"))[0] == expID)]
-
-print len(csvfiles)
 
 expDict = {}
 
@@ -118,69 +203,16 @@ for f in csvfiles:
 # tasks contains just the dataset without the params
 
 
-tasks = {}
-taskLookup = {}
-paramLookup = {}
-taskCount = 0 ;
-paramCount=0;
+resultMatrixTrain,taskLookup,paramLookup = calcPerfMatrix(expDict,measureQualityAlexD1,measureQualityAlexD1,useMRL) ;
+resultMatrixRetrain,taskLookup,paramLookup = calcPerfMatrix(expDict,measureQualityAlex,measureQualityAlexD2D_1,useMRL) ;
+#printResultMatrix(resultMatrixTrain,taskLookup,paramLookup)
 
-for key in expDict:
-  _t,_p = extractTask(key) ; 
-  tasks[_t] = True;
-  if taskLookup.has_key(_t)==False:
-     taskLookup[_t]=taskCount ;
-     taskCount+=1;
-  if paramLookup.has_key(_p)==False:
-     paramLookup[_p]=paramCount ;
-     paramCount+=1;
+for task,taskI in taskLookup.iteritems():
+  bestModelIndex = resultMatrixTrain[taskI,:].argmax() ;
+  perfMeasure = resultMatrixRetrain[taskI,bestModelIndex] ;
+  print 'Task',task, "retrain perf incremental=",perfMeasure
 
-resultMatrix = np.zeros([len(taskLookup.keys()),len(paramLookup.keys())]) ;
-
-
-bestRunID={key:None for key in tasks};
-bestFitness={key:-1 for key in tasks} ;
-worstRunID={key:None for key in tasks};
-worstFitness={key:1000. for key in tasks} ;
-sumX={key:0. for key in tasks} ;
-sumX2={key:0. for key in tasks} ;
-count={key:0. for key in tasks} ;
-validExps = 0 ;
-for key,value in expDict.iteritems():
-  if len(value.keys()) >= 3:
-    #print "valid exp", key ;
-    validExps += 1 ;
-    if key.find("9-1")!= -1:
-      w1 = 0.9 ; w2 = 0.1 ;
-    if key.find("5-5")!= -1:
-      w1 = 0.5 ; w2 = 0.5 ;
-    if key.find("10-10")!= -1:
-      w1 = 0.5 ; w2 = 0.5 ;
-
-    fitness = measureQualityAlex(readResults(key,pathString)) ;
-    if useMRL==True:
-      fitness = measureQualityAlexD2D_1(readResults(key,pathString)) ;
-  
-    task,params = extractTask(key) ;
-    resultMatrix[taskLookup[task],paramLookup[params]] = fitness ;
-    print key,task,params
-    sumX [task ]+= fitness ;
-    sumX2 [task] += fitness*fitness ;
-    count [task] += 1.0 ;
-    if fitness> bestFitness[task]:
-      bestFitness[task]=fitness ;
-      bestRunID[task] = key ;
-    if fitness< worstFitness[task]:
-      worstFitness[task]=fitness ;
-      worstRunID[task] = key ;
-
-  else:
-    print "invalid exp", key, len(value.keys()) ;
-  
-
-
-
-print tasks
-
+"""
 invalid_tasks = []
 for key in tasks:
     if bestRunID[key] is not None:
@@ -190,6 +222,6 @@ for key in tasks:
 
 if invalid_tasks:
     print "Some invalid experiment results for %s were omitted" % invalid_tasks
+"""
 
-np.set_printoptions(threshold=10000000,linewidth=1000000000)
-print resultMatrix.transpose()
+
