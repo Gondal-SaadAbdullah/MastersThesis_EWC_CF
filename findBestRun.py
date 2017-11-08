@@ -1,6 +1,7 @@
 # reads all csv files in current dir. that come from from one experiment and gives the best run results
 # "best"-->fitness function, can be adapted to fit a particular need
 # re-uses the data reading method from the plotting script
+# cmd line params: python findBestRun.py modelID evaluationMethod <useMRL>
 
 from __future__ import division
 from plotOneExp import readResults
@@ -9,9 +10,6 @@ import re, numpy as np, math
 
 from plotOneExp import readResults
 import sys, os, numpy as np
-
-w1 = 0.5
-w2 = 0.5
 
 
 # fitness function
@@ -42,7 +40,9 @@ def measureQualityWithPcnt(D, task):
 
 # best performance on D1
 # quality = performance auf gesamtdatensatz zum ZP i
-def measureQualityAlexD1(D):
+# structure of D is always (D1D1,D2D2,D2D1,D2D-1)
+def measureQualityAlexD1(D,w1,w2,**kwargs):
+    print w1,w2 ;
     if D is None:
       return -1.0 ;
     for d in D:
@@ -52,10 +52,12 @@ def measureQualityAlexD1(D):
     return D1D1[:,1].max() ;
 
 
-
+# selects model on test performance on D1uD2--> requires foreknowledge
+# stop criterion is 99% of maximal D2 test performance while retraining
 # i = wann erreich D2D2 k M seines max?
 # quality = performance auf gesamtdatensatz zum ZP i
-def measureQualityAlex(D):
+# structure of D is always (D1D1,D2D2,D2D1,D2D-1)
+def measureQualityAlexD2D1(D,wD1,wD2,**kwargs):
     if D is None:
       return -1.0 ;
     D2D2 = D[1]
@@ -65,13 +67,14 @@ def measureQualityAlex(D):
     maxD2D2 = D2D2[:, 1].max() * 0.99
     for i in xrange(0, D2D2.shape[0]):
         if D2D2[i, 1] >= maxD2D2:
-            return w1 * D[2][i, 1] + w2 * D[1][i, 1]
+            return wD1 * D[2][i, 1] + wD2 * D[1][i, 1]
 
 
 # i = wann erreich D2D2 k M seines max?
 # quality = performance auf gesamtdatensatz zum ZP i
 # aber: lies performance auf D1 aus Datei _D2D-1 ab
-def measureQualityAlexD2D_1(D):
+# structure of D is always (D1D1,D2D2,D2D1,D2D-1)
+def measureQualityAlexD2D_1(D,wD1,wD2,**kwargs):
     if D is None:
       return -1.0 ;
     if len(D) < 4:
@@ -84,7 +87,7 @@ def measureQualityAlexD2D_1(D):
     maxD2D2 = D2D2[:, 1].max() * 0.99
     for i in xrange(0, D2D2.shape[0]):
         if D2D2[i, 1] >= maxD2D2:
-          return w1 * D[3][i, 1] + w2 * D[1][i, 1]              
+          return wD1 * D[3][i, 1] + wD2 * D[1][i, 1]              
 
 
 def extractTask(runID):
@@ -97,12 +100,11 @@ def extractTask(runID):
 
 
 def getWeightsForAvg(task):
-    p1 = int(re.search(r'\d+', task.split("-")[0]).group())
-    p2 = int(re.search(r'\d+', task.split("-")[1]).group())
-    return p1 / 10, p2 / 10
+    p1 = float(re.search(r'\d+', task.split("-")[0]).group())
+    p2 = float(re.search(r'\d+', task.split("-")[1]).group())
+    return p1 / (p1+p2), p2 / (p1+p2)
 
 def calcPerfMatrix(expDict,qualityMeasure,qualityMeasureMRL,useMRL=False):
-
   tasks = {}
   taskLookup = {}
   paramLookup = {}
@@ -134,18 +136,13 @@ def calcPerfMatrix(expDict,qualityMeasure,qualityMeasureMRL,useMRL=False):
     if len(value.keys()) >= 3:
       #print "valid exp", key ;
       validExps += 1 ;
-      if key.find("9-1")!= -1:
-        w1 = 0.9 ; w2 = 0.1 ;
-      if key.find("5-5")!= -1:
-        w1 = 0.5 ; w2 = 0.5 ;
-      if key.find("10-10")!= -1:
-        w1 = 0.5 ; w2 = 0.5 ;
 
-      fitness = qualityMeasure(readResults(key,pathString)) ;
-      if useMRL==True:
-        fitness = qualityMeasureMRL(readResults(key,pathString)) ;
-  
       task,params = extractTask(key) ;
+      
+      fitness = qualityMeasure(readResults(key,pathString),*(getWeightsForAvg(task))) ;
+      if useMRL==True:
+        fitness = qualityMeasureMRL(readResults(key,pathString),*(getWeightsForAvg(task))) ;
+  
       resultMatrix[taskLookup[task],paramLookup[params]] = fitness ;
       """sumX [task ]+= fitness ;
       sumX2 [task] += fitness*fitness ;
@@ -176,10 +173,9 @@ def printResultMatrix(resultMatrix,taskLookup,paramLookup):
 
 expID = sys.argv[1]
 pathString = "./"
-if len(sys.argv) > 2:
-    pathString = sys.argv[2]
+evalMode = sys.argv[2] ;
 useMRL = False
-if len(sys.argv) > 3:
+if len(sys.argv) >= 4:
     useMRL = True
 
 csvfiles = [f for f in os.listdir(pathString) if (f.find(".csv") != -1 and (f.split("_"))[0] == expID)]
@@ -202,15 +198,30 @@ for f in csvfiles:
 # values are lists of csv files
 # tasks contains just the dataset without the params
 
+if evalMode == "realistic":
+  resultMatrixTrain,taskLookup,paramLookup = calcPerfMatrix(expDict,measureQualityAlexD1,measureQualityAlexD1,useMRL) ;
+  resultMatrixRetrain,taskLookup,paramLookup = calcPerfMatrix(expDict,measureQualityAlexD2D1,measureQualityAlexD2D_1,useMRL) ;
 
-resultMatrixTrain,taskLookup,paramLookup = calcPerfMatrix(expDict,measureQualityAlexD1,measureQualityAlexD1,useMRL) ;
-resultMatrixRetrain,taskLookup,paramLookup = calcPerfMatrix(expDict,measureQualityAlex,measureQualityAlexD2D_1,useMRL) ;
-#printResultMatrix(resultMatrixTrain,taskLookup,paramLookup)
+  for task,taskI in taskLookup.iteritems():
+    bestParamI = resultMatrixTrain[taskI,:].argmax() ;
+    bestModel = "dunno";
+    for param,paramI in paramLookup.iteritems():
+      if bestParamI == paramI:
+        bestModel = param ;
+    perfMeasure = resultMatrixRetrain[taskI,bestParamI] ;
+    print 'Task',task, "model=",expID+"_"+task+"_"+bestModel,"retrain perf incremental=",perfMeasure
 
-for task,taskI in taskLookup.iteritems():
-  bestModelIndex = resultMatrixTrain[taskI,:].argmax() ;
-  perfMeasure = resultMatrixRetrain[taskI,bestModelIndex] ;
-  print 'Task',task, "retrain perf incremental=",perfMeasure
+elif evalMode == "prescient":
+  resultMatrixTrainRetrain,taskLookup,paramLookup = calcPerfMatrix(expDict,measureQualityAlexD2D1,measureQualityAlexD2D_1,useMRL) ;
+
+  for task,taskI in taskLookup.iteritems():
+    bestParamI = resultMatrixTrainRetrain[taskI,:].argmax() ;
+    bestModel = "dunno";
+    for param,paramI in paramLookup.iteritems():
+      if bestParamI == paramI:
+        bestModel = param ;
+    perfMeasure = resultMatrixTrainRetrain[taskI,bestParamI] ;
+    print 'Task',task, "model=",expID+"_"+task+"_"+bestModel,"retrain perf incremental=",perfMeasure
 
 """
 invalid_tasks = []
