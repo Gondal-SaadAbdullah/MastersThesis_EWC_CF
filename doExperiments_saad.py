@@ -172,6 +172,23 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
             execStr = execStr + "--permuteTrain 1 --permuteTest 0"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
                   " --load_model " + model_name + "_D1D1 --plot_file " + model_name + supp+".csv" + " --start_at_step "+str(maxSteps)
+    elif action=="D2DAll":     
+        train_classes = " --train_classes " + D2 + trainingReadoutStr
+        test_classes = " --test_classes " + D1 + testingReadoutStr
+        test2_classes = " --test2_classes " + D2 + " --testing2_readout_layer 2 "
+        test3_classes = " --test3_classes " + D1+" "+D2+" " + " --testing2_readout_layer -1 "
+        supp = "_"+action ;       
+        plotFile1 = " --plot_file " + model_name + "_D2D1.csv"
+        plotFile2 = " --plot_file2 " + model_name + "_D2D2.csv"
+        plotFile3 = " --plot_file3 " + model_name + "_D2D-1.csv"
+
+        retrain_lr = " --learning_rate " + str(params[2])
+        if params[0]  in ["DP10-10","DP5-5"]:
+            execStr = execStr + "--permuteTrain 1 --permuteTest 0"
+        execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + " "+test2_classes+" "+test3_classes+" "+ \
+                  " --load_model " + model_name + "_D1D1 --start_at_step "+str(maxSteps)+" "+plotFile1+" "+plotFile2+" "+plotFile3 ;
+
+
     else:
         return "??" + action
 
@@ -259,9 +276,9 @@ for t in validCombinations:
     alreadyDone[uniqueID]=True;
     f = files[n] ;
     f.write(generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
-    f.write(generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D2
-    f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
-    f.write(generateCommandLine(expID,scriptName, "D2D-1", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
+    #f.write(generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D2
+    #f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
+    f.write(generateCommandLine(expID,scriptName, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write("rm checkpoints/"+uniqueID+"*\n")
 
     n += 1

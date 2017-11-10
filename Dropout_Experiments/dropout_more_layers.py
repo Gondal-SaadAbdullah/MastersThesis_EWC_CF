@@ -112,9 +112,13 @@ def initDataSetsClasses():
 
         if FLAGS.test2_classes != None:
             labels_to_test2 = [int(i) for i in FLAGS.test2_classes[0:]]
+        else:
+            labels_to_test2 = []
 
         if FLAGS.test3_classes != None:
             labels_to_test3 = [int(i) for i in FLAGS.test3_classes[0:]]
+        else:
+            labels_to_test3 = []
 
         # Filtered labels & data for training and testing.
         labels_train_classes = np.array([mnistLabelsTrain[i].argmax() for i in xrange(0,
@@ -154,9 +158,10 @@ def initDataSetsClasses():
         dataSetTest3 = DataSet(255. * data_test3_classes,
                               labelsTest3Onehot, reshape=False)
 
-        print ("EQUAL?",np.mean((data_test3_classes==data_test_classes)).astype("float32")) ;
-        print (data_test3_classes.shape, data_test_classes.shape) ;
-        print (labels_to_test3,labels_to_test) ;
+        #print ("EQUAL?",np.mean((data_test3_classes==data_test_classes)).astype("float32")) ;
+        print (data_test3_classes.shape, data_test2_classes.shape) ;
+        print (FLAGS.test_classes, FLAGS.test2_classes, FLAGS.test3_classes)
+        print (labels_to_test3,labels_to_test2) ;
 
 
 
@@ -466,15 +471,15 @@ def train():
                 writer.writerow([i, acc])
 
                 if FLAGS.test2_classes != None:
-                  if testing_readout_layer is 1:
+                  if testing2_readout_layer is 1:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict2(False, i))
-                  elif testing_readout_layer is 2:
+                  elif testing2_readout_layer is 2:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict2(False, i))
-                  elif testing_readout_layer is 3:
+                  elif testing2_readout_layer is 3:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict2(False, i))
-                  elif testing_readout_layer is 4:
+                  elif testing2_readout_layer is 4:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict2(False, i))
-                  elif testing_readout_layer is -1:
+                  elif testing2_readout_layer is -1:
                       _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
                         [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
                         feed_dict=feed_dict2(False, i))
@@ -482,15 +487,15 @@ def train():
                   writer2.writerow([i, acc])
 
                 if FLAGS.test3_classes != None:
-                  if testing_readout_layer is 1:
+                  if testing3_readout_layer is 1:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict3(False, i))
-                  elif testing_readout_layer is 2:
+                  elif testing3_readout_layer is 2:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict3(False, i))
-                  elif testing_readout_layer is 3:
+                  elif testing3_readout_layer is 3:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict3(False, i))
-                  elif testing_readout_layer is 4:
+                  elif testing3_readout_layer is 4:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict3(False, i))
-                  elif testing_readout_layer is -1:
+                  elif testing3_readout_layer is -1:
                       _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
                         [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
                         feed_dict=feed_dict3(False, i))
@@ -513,6 +518,7 @@ def train():
         #test_writer_ds.close()
 
         if args.save_model:
+            print ("saving to", args.checkpoints_dir + args.save_model + '.ckpt')
             saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt')
 
 
