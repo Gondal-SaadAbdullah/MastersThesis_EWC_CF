@@ -41,6 +41,8 @@ wdict = {}
 def initDataSetsClasses():
     global dataSetTrain
     global dataSetTest
+    global dataSetTest2
+    global dataSetTest3
 
     print(FLAGS.train_classes, FLAGS.test_classes)
     # Variable to read out the labels & data of the DataSet Object.
@@ -55,6 +57,18 @@ def initDataSetsClasses():
     mnistDataTest = mnistData.test.images
     print("LABELS", mnistLabelsTest.shape, mnistLabelsTrain.shape)
 
+    ## starting point:  
+    # TRAINSET: mnistDataTrain, mnistLabelsTrain
+    # TESTSET: mnistDataTest, mnistLabelsTest
+
+    # make a copy
+    mnistDataTest2 = mnistDataTest+0.0 ;
+    mnistLabelsTest2 = mnistLabelsTest+0.0 ;
+
+    # make a copy
+    mnistDataTest3 = mnistDataTest+0.0 ;
+    mnistLabelsTest3 = mnistLabelsTest+0.0 ;
+
     if FLAGS.permuteTrain != -1:
         # training dataset
         np.random.seed(FLAGS.permuteTrain)
@@ -64,6 +78,7 @@ def initDataSetsClasses():
         # dataSetTrain = DataSet(255. * dataSetTrainPerm,
         #                       mnistLabelsTrain, reshape=False)
     if FLAGS.permuteTest != -1:
+        print ("Permute")
         # testing dataset
         np.random.seed(FLAGS.permuteTest)
         permTs = np.random.permutation(mnistDataTest.shape[1])
@@ -71,15 +86,35 @@ def initDataSetsClasses():
         # dataSetTest = DataSet(255. * dataSetTestPerm,
         #                      mnistLabelsTest, reshape=False)
         mnistDataTest = mnistDataTestPerm;
+    if FLAGS.permuteTest2 != -1:
+        # testing dataset
+        print ("Permute2")
+        np.random.seed(FLAGS.permuteTest2)
+        permTs = np.random.permutation(mnistDataTest.shape[1])
+        mnistDataTestPerm = mnistDataTest[:, permTs]
+        mnistDataTest2 = mnistDataTestPerm;
+    if FLAGS.permuteTest3 != -1:
+        print ("Permute3")
+        # testing dataset
+        np.random.seed(FLAGS.permuteTest3)
+        permTs = np.random.permutation(mnistDataTest.shape[1])
+        mnistDataTestPerm = mnistDataTest[:, permTs]
+        mnistDataTest3 = mnistDataTestPerm;
+
 
     if True:
         # args = parser.parse_args()
-        print(FLAGS.train_classes, FLAGS.test_classes)
         if FLAGS.train_classes[0:]:
             labels_to_train = [int(i) for i in FLAGS.train_classes[0:]]
 
         if FLAGS.test_classes[0:]:
             labels_to_test = [int(i) for i in FLAGS.test_classes[0:]]
+
+        if FLAGS.test2_classes != None:
+            labels_to_test2 = [int(i) for i in FLAGS.test2_classes[0:]]
+
+        if FLAGS.test3_classes != None:
+            labels_to_test3 = [int(i) for i in FLAGS.test3_classes[0:]]
 
         # Filtered labels & data for training and testing.
         labels_train_classes = np.array([mnistLabelsTrain[i].argmax() for i in xrange(0,
@@ -91,22 +126,38 @@ def initDataSetsClasses():
                                        mnistLabelsTrain[i].argmax()
                                        in labels_to_train], dtype=np.float32)
 
-        labels_test_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,
-                                                                                    mnistLabelsTest.shape[0]) if
-                                        mnistLabelsTest[i].argmax()
-                                        in labels_to_test], dtype=np.uint8)
-        data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,
-                                                                          mnistDataTest.shape[0]) if
-                                      mnistLabelsTest[i].argmax()
-                                      in labels_to_test], dtype=np.float32)
+        labels_test_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,mnistLabelsTest.shape[0]) 
+                                                                    if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.uint8)
+        labels_test2_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,mnistLabelsTest.shape[0]) 
+                                                                    if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.uint8)
+        labels_test3_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,mnistLabelsTest.shape[0]) 
+                                                                    if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.uint8)
+        data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,mnistDataTest.shape[0]) 
+                                                          if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.float32) ;
+        data_test2_classes = np.array([mnistDataTest[i, :] for i in xrange(0,mnistDataTest.shape[0]) 
+                                                          if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.float32) ;
+        data_test3_classes = np.array([mnistDataTest[i, :] for i in xrange(0,mnistDataTest.shape[0]) 
+                                                          if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.float32) ;
+
 
         labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
         labelsTestOnehot = dense_to_one_hot(labels_test_classes, 10)
+        labelsTest2Onehot = dense_to_one_hot(labels_test2_classes, 10)
+        labelsTest3Onehot = dense_to_one_hot(labels_test3_classes, 10)
 
         dataSetTrain = DataSet(255. * data_train_classes,
                                labelsTrainOnehot, reshape=False)
         dataSetTest = DataSet(255. * data_test_classes,
                               labelsTestOnehot, reshape=False)
+        dataSetTest2 = DataSet(255. * data_test2_classes,
+                              labelsTest2Onehot, reshape=False)
+        dataSetTest3 = DataSet(255. * data_test3_classes,
+                              labelsTest3Onehot, reshape=False)
+
+        print ("EQUAL?",np.mean((data_test3_classes==data_test_classes)).astype("float32")) ;
+        print (data_test3_classes.shape, data_test_classes.shape) ;
+        print (labels_to_test3,labels_to_test) ;
+
 
 
 def train():
@@ -129,6 +180,30 @@ def train():
             k_h = 1.0
             k_i = 1.0
         return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+
+    def feed_dict2(train, i):
+        if train:
+            xs, ys = dataSetTrain.next_batch(FLAGS.batch_size)
+            k_h = FLAGS.dropout_hidden
+            k_i = FLAGS.dropout_input
+        else:
+            xs, ys = dataSetTest2.images, dataSetTest2.labels
+            k_h = 1.0
+            k_i = 1.0
+        return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+
+    def feed_dict3(train, i):
+        if train:
+            xs, ys = dataSetTrain.next_batch(FLAGS.batch_size)
+            k_h = FLAGS.dropout_hidden
+            k_i = FLAGS.dropout_input
+        else:
+            xs, ys = dataSetTest3.images, dataSetTest3.labels
+            k_h = 1.0
+            k_i = 1.0
+        return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+
+
 
     # weights initialization
     def weight_variable(shape, stddev, name="W"):
@@ -361,6 +436,11 @@ def train():
     else:
         tf.global_variables_initializer().run()
     writer = csv.writer(open(FLAGS.plot_file, "wb"))
+    writer2 = None; writer3 = None ;
+    if FLAGS.test2_classes != None:
+      writer2 = csv.writer(open(FLAGS.plot2_file, "wb"))
+    if FLAGS.test3_classes != None:
+      writer3 = csv.writer(open(FLAGS.plot3_file, "wb"))
 
     with tf.name_scope("training"):
         print('\n\nTraining on given Dataset...')
@@ -381,10 +461,44 @@ def train():
                     _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
                         [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
                         feed_dict=feed_dict(False, i))
-
                 #test_writer_ds.add_summary(s, i)
                 print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
                 writer.writerow([i, acc])
+
+                if FLAGS.test2_classes != None:
+                  if testing_readout_layer is 1:
+                      _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict2(False, i))
+                  elif testing_readout_layer is 2:
+                      _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict2(False, i))
+                  elif testing_readout_layer is 3:
+                      _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict2(False, i))
+                  elif testing_readout_layer is 4:
+                      _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict2(False, i))
+                  elif testing_readout_layer is -1:
+                      _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
+                        [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
+                        feed_dict=feed_dict2(False, i))
+                  print(_lr, 'test set 2 accuracy at step: %s \t \t %s' % (i, acc))
+                  writer2.writerow([i, acc])
+
+                if FLAGS.test3_classes != None:
+                  if testing_readout_layer is 1:
+                      _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict3(False, i))
+                  elif testing_readout_layer is 2:
+                      _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict3(False, i))
+                  elif testing_readout_layer is 3:
+                      _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict3(False, i))
+                  elif testing_readout_layer is 4:
+                      _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict3(False, i))
+                  elif testing_readout_layer is -1:
+                      _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
+                        [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
+                        feed_dict=feed_dict3(False, i))
+                  print(_lr, 'test set 3 accuracy at step: %s \t \t %s' % (i, acc))
+                  writer3.writerow([i, acc])
+
+
+
             else:  # record train set summaries, and run training steps
                 if training_readout_layer is 1:
                     s, _ = sess.run([merged, train_step_tr1], feed_dict(True, i))
@@ -485,6 +599,13 @@ if __name__ == '__main__':
     parser.add_argument('--plot_file', type=str,
                         default='dropout_more_layers.csv',
                         help='Filename for csv file to plot. Give .csv extension after file name.')
+    parser.add_argument('--plot2_file', type=str,
+                        default='dropout_more_layers2.csv',
+                        help='Filename for csv file to plot. Give .csv extension after file name.')
+    parser.add_argument('--plot3_file', type=str,
+                        default='dropout_more_layers3.csv',
+                        help='Filename for csv file to plot3. Give .csv extension after file name.')
+
 
     FLAGS, unparsed = parser.parse_known_args()
     print ("TEST2=",FLAGS.test2_classes) ;
