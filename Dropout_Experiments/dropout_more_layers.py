@@ -471,15 +471,15 @@ def train():
                 writer.writerow([i, acc])
 
                 if FLAGS.test2_classes != None:
-                  if testing2_readout_layer is 1:
+                  if FLAGS.testing2_readout_layer is 1:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict2(False, i))
-                  elif testing2_readout_layer is 2:
+                  elif FLAGS.testing2_readout_layer is 2:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict2(False, i))
-                  elif testing2_readout_layer is 3:
+                  elif FLAGS.testing2_readout_layer is 3:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict2(False, i))
-                  elif testing2_readout_layer is 4:
+                  elif FLAGS.testing2_readout_layer is 4:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict2(False, i))
-                  elif testing2_readout_layer is -1:
+                  elif FLAGS.testing2_readout_layer is -1:
                       _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
                         [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
                         feed_dict=feed_dict2(False, i))
@@ -487,15 +487,15 @@ def train():
                   writer2.writerow([i, acc])
 
                 if FLAGS.test3_classes != None:
-                  if testing3_readout_layer is 1:
+                  if FLAGS.testing3_readout_layer is 1:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict3(False, i))
-                  elif testing3_readout_layer is 2:
+                  elif FLAGS.testing3_readout_layer is 2:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict3(False, i))
-                  elif testing3_readout_layer is 3:
+                  elif FLAGS.testing3_readout_layer is 3:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict3(False, i))
-                  elif testing3_readout_layer is 4:
+                  elif FLAGS.testing3_readout_layer is 4:
                       _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict3(False, i))
-                  elif testing3_readout_layer is -1:
+                  elif FLAGS.testing3_readout_layer is -1:
                       _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
                         [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
                         feed_dict=feed_dict3(False, i))
