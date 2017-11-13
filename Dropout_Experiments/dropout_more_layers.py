@@ -184,7 +184,10 @@ def train():
             xs, ys = dataSetTest.images, dataSetTest.labels
             k_h = 1.0
             k_i = 1.0
-        return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        if FLAGS.dnn_model=='fc':
+          return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        else:
+          return {x: xs, y_: ys, global_step: i}
 
     def feed_dict2(train, i):
         if train:
@@ -195,7 +198,10 @@ def train():
             xs, ys = dataSetTest2.images, dataSetTest2.labels
             k_h = 1.0
             k_i = 1.0
-        return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        if FLAGS.dnn_model=='fc':
+          return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        else:
+          return {x: xs, y_: ys, global_step: i}
 
     def feed_dict3(train, i):
         if train:
@@ -206,7 +212,10 @@ def train():
             xs, ys = dataSetTest3.images, dataSetTest3.labels
             k_h = 1.0
             k_i = 1.0
-        return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        if FLAGS.dnn_model=='fc':
+          return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        else:
+          return {x: xs, y_: ys, global_step: i}
 
 
 
@@ -233,6 +242,22 @@ def train():
             tf.summary.histogram("biases", b)
             tf.summary.histogram("activation", act)
             return act
+
+    # careful: actual output size is channels_out*blockSize
+    def lwta_layer(input, channels_in, channels_out, blockSize, stddev, name='lwta'):
+        with tf.name_scope(name):
+            with tf.name_scope('weights'):
+                W = weight_variable([channels_in,
+                                     channels_out * blockSize], stddev)
+            with tf.name_scope('biases'):
+                b = bias_variable([blockSize * channels_out])
+            actTmp = tf.reshape(tf.matmul(input, W) + b, (-1, channels_out, blockSize));
+            # ask where the maxes lie --> bool tensor, then cast to float where True --> 1.0, False --> 0.0
+            maxesMask = tf.cast(tf.equal(actTmp, tf.expand_dims(tf.reduce_max(actTmp, axis=2), 2)), tf.float32)
+            # point-wise multiplication of these two tensors will result in a tesnor where only the max
+            # activations are left standing, the rest goes to 0 as specified by LWTA
+            return tf.reshape(actTmp * maxesMask, (-1, channels_out * blockSize))
+
 
     # define a sotfmax linear classification layer
     def softmax_linear(input, channels_in, channels_out, stddev, name='read'):
@@ -263,66 +288,113 @@ def train():
 
     global global_step
     global_step = tf.placeholder(tf.float32, shape=[], name="step")
+    logits_tr1 = None; logits_tr2 = None ; logits_tr4 = None ; logitsAll = None ;
 
-    # apply dropout to the input layer
-    keep_prob_input = tf.placeholder(tf.float32)
-    tf.summary.scalar('dropout_input', keep_prob_input)
+    if FLAGS.dnn_model=="fc":
+      # apply dropout to the input layer
+      keep_prob_input = tf.placeholder(tf.float32)
+      tf.summary.scalar('dropout_input', keep_prob_input)
 
-    x_drop = tf.nn.dropout(x, keep_prob_input)
+      x_drop = tf.nn.dropout(x, keep_prob_input)
 
-    # Create the first hidden layer
-    h_fc1 = fc_layer(x_drop, IMAGE_PIXELS, FLAGS.hidden1,
+      # Create the first hidden layer
+      h_fc1 = fc_layer(x_drop, IMAGE_PIXELS, FLAGS.hidden1,
                      1.0 / math.sqrt(float(IMAGE_PIXELS)), 'h_fc1')
 
-    # Apply dropout to first hidden layer
-    keep_prob_hidden = tf.placeholder(tf.float32)
-    tf.summary.scalar('dropout_hidden', keep_prob_hidden)
+      # Apply dropout to first hidden layer
+      keep_prob_hidden = tf.placeholder(tf.float32)
+      tf.summary.scalar('dropout_hidden', keep_prob_hidden)
 
-    h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob_hidden)
+      h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob_hidden)
 
-    # Create the second hidden layer
-    h_fc2 = fc_layer(h_fc1_drop, FLAGS.hidden1, FLAGS.hidden2,
+      # Create the second hidden layer
+      h_fc2 = fc_layer(h_fc1_drop, FLAGS.hidden1, FLAGS.hidden2,
                      1.0 / math.sqrt(float(FLAGS.hidden1)), 'h_fc2')
 
-    # Apply dropout to second hidden layer
-    h_fc2_drop = tf.nn.dropout(h_fc2, keep_prob_hidden)
+      # Apply dropout to second hidden layer
+      h_fc2_drop = tf.nn.dropout(h_fc2, keep_prob_hidden)
 
-    # Create a softmax linear classification layer for the outputs
-    if FLAGS.hidden3 == -1:
-        logits_tr1 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
+      # Create a softmax linear classification layer for the outputs
+      if FLAGS.hidden3 == -1:
+          logits_tr1 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2)),
                                     'softmax_linear_tr1')
-        logits_tr2 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
+          logits_tr2 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2)),
                                     'softmax_linear_tr2')
-        logits_tr3 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
+          logits_tr3 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2)),
                                     'softmax_linear_tr3')
-        logits_tr4 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
+          logits_tr4 = softmax_linear(h_fc2_drop, FLAGS.hidden2, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden2)),
                                     'softmax_linear_tr4')
-    else:
-        h_fc3 = fc_layer(h_fc2_drop, FLAGS.hidden2, FLAGS.hidden3,
+      else:
+          h_fc3 = fc_layer(h_fc2_drop, FLAGS.hidden2, FLAGS.hidden3,
                          1.0 / math.sqrt(float(FLAGS.hidden3)), 'h_fc3')
 
-        # Apply dropout to third hidden layer
-        h_fc3_drop = tf.nn.dropout(h_fc3, keep_prob_hidden)
+          # Apply dropout to third hidden layer
+          h_fc3_drop = tf.nn.dropout(h_fc3, keep_prob_hidden)
 
-        logits_tr1 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
+          logits_tr1 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden3)),
                                     'softmax_linear_tr1')
-        logits_tr2 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
+          logits_tr2 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden3)),
                                     'softmax_linear_tr2')
-        logits_tr3 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
+          logits_tr3 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden3)),
                                     'softmax_linear_tr3')
-        logits_tr4 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
+          logits_tr4 = softmax_linear(h_fc3_drop, FLAGS.hidden3, NUM_CLASSES,
                                     1.0 / math.sqrt(float(FLAGS.hidden3)),
                                     'softmax_linear_tr4')
 
-    # logitsAll = tf.clip_by_value(logits_tr1,0,10000)+tf.clip_by_value(logits_tr2,0,10000)+tf.clip_by_value(logits_tr3,0,10000)+tf.clip_by_value(logits_tr4,0,10000) ;
-    logitsAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4;
+      logitsAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4;
+    elif FLAGS.dnn_model=="lwta":    
+      # Create the first hidden layer
+      h_fc1 = lwta_layer(x, IMAGE_PIXELS, FLAGS.hidden1, FLAGS.lwtaBlockSize,
+                       1.0 / math.sqrt(float(IMAGE_PIXELS)), 'h_lwta1')
+
+      # Create the second hidden layer
+      h_fc2 = lwta_layer(h_fc1, FLAGS.hidden1 * FLAGS.lwtaBlockSize, FLAGS.hidden2, FLAGS.lwtaBlockSize,
+                       1.0 / math.sqrt(float(FLAGS.hidden1 * FLAGS.lwtaBlockSize)), 'h_lwta2')
+
+      # Create a softmax linear classification layer for the outputs
+      if FLAGS.hidden3 == -1:
+          logits_tr1 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr1')
+          logits_tr2 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr2')
+          logits_tr3 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr3')
+          logits_tr4 = softmax_linear(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden2 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr4')
+      else:
+          h_fc3 = lwta_layer(h_fc2, FLAGS.hidden2 * FLAGS.lwtaBlockSize, FLAGS.hidden3, FLAGS.lwtaBlockSize,
+                           1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)), 'h_lwta3')
+
+          logits_tr1 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr1')
+          logits_tr2 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr2')
+          logits_tr3 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr3')
+          logits_tr4 = softmax_linear(h_fc3, FLAGS.hidden3 * FLAGS.lwtaBlockSize, NUM_CLASSES,
+                                    1.0 / math.sqrt(float(FLAGS.hidden3 * FLAGS.lwtaBlockSize)),
+                                    'softmax_linear_tr4')
+
+      logitsAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4;
+    else:
+      print ("invalid model")
+      sys.exit(-1) ;
+
+
     # Define the loss model as a cross entropy with softmax layer 1
     with tf.name_scope('cross_entropy_tr1'):
         diff_tr1 = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits_tr1)
@@ -443,9 +515,11 @@ def train():
     writer = csv.writer(open(FLAGS.plot_file, "wb"))
     writer2 = None; writer3 = None ;
     if FLAGS.test2_classes != None:
-      writer2 = csv.writer(open(FLAGS.plot2_file, "wb"))
+      print ("WRITER2=",FLAGS.plot_file2) ;
+      writer2 = csv.writer(open(FLAGS.plot_file2, "wb"))
     if FLAGS.test3_classes != None:
-      writer3 = csv.writer(open(FLAGS.plot3_file, "wb"))
+      print ("WRITER3=",FLAGS.plot_file3) ;
+      writer3 = csv.writer(open(FLAGS.plot_file3, "wb"))
 
     with tf.name_scope("training"):
         print('\n\nTraining on given Dataset...')
@@ -593,6 +667,12 @@ if __name__ == '__main__':
                         help='Specify the readout layer (1,2,3,4) for second testing. testing2 not applied if test_classes2 is undefined ')
     parser.add_argument('--testing3_readout_layer', type=int, default='1',
                         help='Specify the readout layer (1,2,3,4) for third testing. testing2 not applied if test_classes2 is undefined')
+    parser.add_argument('--dnn_model', type=str,
+                        default='fc',
+                        help='Directory for storing input data')
+    parser.add_argument('--lwtaBlockSize', type=int, default=2,
+                        help='Number of lwta blocks in all hidden layers')
+
     parser.add_argument('--data_dir', type=str,
                         default='./',
                         help='Directory for storing input data')
@@ -605,10 +685,10 @@ if __name__ == '__main__':
     parser.add_argument('--plot_file', type=str,
                         default='dropout_more_layers.csv',
                         help='Filename for csv file to plot. Give .csv extension after file name.')
-    parser.add_argument('--plot2_file', type=str,
+    parser.add_argument('--plot_file2', type=str,
                         default='dropout_more_layers2.csv',
                         help='Filename for csv file to plot. Give .csv extension after file name.')
-    parser.add_argument('--plot3_file', type=str,
+    parser.add_argument('--plot_file3', type=str,
                         default='dropout_more_layers3.csv',
                         help='Filename for csv file to plot3. Give .csv extension after file name.')
 

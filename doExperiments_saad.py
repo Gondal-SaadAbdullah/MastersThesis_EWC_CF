@@ -1,15 +1,22 @@
-# 1) when doing fc there muist be no mrl experiments
-# 2) saving model file and csv nales are not unique
+# generates bash files for doing excperiments
+# each experiments produces exactly 4 outputs:
+# modelID_runID_D1D1.csv, D2D1.csv, D2D2.csv, D2D-1.csv
+# D1D1: training on D1, test on D1
+# D2D1: training on D2, test on D1
+# D2D2: training on D2, test on D2
+# D2D-1: training on D2, test on D1uD2 using all readout layers. This should be identical to test 
+# with one readout layer only for non-MRL experiments
+# 
 import os, sys, itertools
 
 
 def getScriptName(expID):
     if expID in ["fc", "D-fc", "fc-MRL", "D-fc-MRL"]:
-        return "./Dropout_Experiments/dropout_more_layers.py"
+        return "./Dropout_Experiments/dropout_more_layers.py "
     elif expID in ["conv", "D-conv", "conv-MRL", "D-conv-MRL"]:
-        return "./Dropout_Experiments/convnet_more_layers.py"
+        return "./Dropout_Experiments/convnet_more_layers.py "
     elif expID in ["LWTA-fc", "LWTA-fc-MRL"]:
-        return "./LWTA_Experiments/lwta_more_layers.py"
+        return "./Dropout_Experiments/dropout_more_layers.py --dnn_method lwta "
     elif expID == "EWC":
         return "./ewc_with_options.py"
 
@@ -119,22 +126,16 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
 
     trainingReadoutStr = " --training_readout_layer 1" ;
     testingReadoutStr = " --testing_readout_layer 1" ;
+    testing2ReadoutStr = " --testing2_readout_layer 1" ;
+    testing3ReadoutStr = " --testing3_readout_layer 1" ;
     if mlrExperiment == True:
       if action=="D1D1":
         pass ;
-      elif action=="D2D2":
-        trainingReadoutStr = " --training_readout_layer 2" ;
-        testingReadoutStr = " --testing_readout_layer 2" ;
-      elif action=="D2D1":
+      elif action== "D2DAll":
         trainingReadoutStr = " --training_readout_layer 2" ;
         testingReadoutStr = " --testing_readout_layer 1" ;
-      if action=="D2D-1":
-        trainingReadoutStr = " --training_readout_layer 2" ;
-        testingReadoutStr = " --testing_readout_layer -1" ;
-    else:
-      if action=="D2D-1":
-        trainingReadoutStr = " --training_readout_layer 1" ;
-        testingReadoutStr = " --testing_readout_layer -1" ;
+        testing2ReadoutStr = " --testing2_readout_layer 2" ;
+        testing3ReadoutStr = " --testing3_readout_layer -1" ;
 
     if expID=="EWC" and action =="D2D-1":
       return "# no D2D-1";
@@ -155,28 +156,11 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
             execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
         execStr = execStr + " " + train_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D1D1 --plot_file " + model_name + "_D1D1.csv" + " --start_at_step 0"
-    elif action == "D2D2":
-        train_classes = " --train_classes " + D2 + trainingReadoutStr
-        test_classes = " --test_classes " + D2 + testingReadoutStr
-        retrain_lr = " --learning_rate " + str(params[2])
-        if params[0] in ["DP10-10","DP5-5"]:
-            execStr = execStr + " --permuteTrain 1 --permuteTest 1"
-        execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                   " --load_model " + model_name + "_D1D1 --plot_file " + model_name + "_D2D2.csv" + " --start_at_step "+str(maxSteps)
-    elif action == "D2D1" or action=="D2D-1":
-        supp = "_"+action ;
-        train_classes = " --train_classes " + D2 + trainingReadoutStr
-        test_classes = " --test_classes " + D1 + testingReadoutStr
-        retrain_lr = " --learning_rate " + str(params[2])
-        if params[0]  in ["DP10-10","DP5-5"]:
-            execStr = execStr + "--permuteTrain 1 --permuteTest 0"
-        execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + \
-                  " --load_model " + model_name + "_D1D1 --plot_file " + model_name + supp+".csv" + " --start_at_step "+str(maxSteps)
     elif action=="D2DAll":     
         train_classes = " --train_classes " + D2 + trainingReadoutStr
         test_classes = " --test_classes " + D1 + testingReadoutStr
-        test2_classes = " --test2_classes " + D2 + " --testing2_readout_layer 2 "
-        test3_classes = " --test3_classes " + D1+" "+D2+" " + " --testing3_readout_layer -1 "
+        test2_classes = " --test2_classes " + D2 + testing2ReadoutStr
+        test3_classes = " --test3_classes " + D1+" "+D2+" " + testing3ReadoutStr
         supp = "_"+action ;       
         plotFile1 = " --plot_file " + model_name + "_D2D1.csv"
         plotFile2 = " --plot_file2 " + model_name + "_D2D2.csv"
