@@ -52,5 +52,6 @@ ax.set_ylabel ("incr. performance", size=30)
 ax.legend(fontsize=7,loc='upper right')
 
 #plt.show() ;
+plt.tight_layout()
 plt.savefig(sys.argv[1]+".svg") ;
 
