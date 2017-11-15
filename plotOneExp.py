@@ -1,6 +1,11 @@
 # plots thee csv files from cf experiments into a single png file that is named according to the experiments parameters
 import numpy as np ;
-import os ;
+import os,re ;
+
+def getWeightsForAvg(task):
+    p1 = float(re.search(r'\d+', task.split("-")[0]).group())
+    p2 = float(re.search(r'\d+', task.split("-")[1]).group())
+    return p1 / (p1+p2), p2 / (p1+p2)
 
 
 # takes a model string and returns a list of three numpy arrays with the experimental results stored in 2D matrices
@@ -56,12 +61,16 @@ if __name__=="__main__":
 
 
   D = readResults(sys.argv[1], pathString) ;
+  w1,w2 = getWeightsForAvg(params[1]) ;
+  Dagg = w1*D[2][:,1]+w2 * D[1][:,1] ;
 
-  ax.plot(D[0][:,0],D[0][:,1], linewidth=3,label='D1D1')
-  ax.plot(D[1][:,0],D[1][:,1], linewidth=3,label='D2D2')
-  ax.plot(D[2][:,0],D[2][:,1], linewidth=3,label='D2D1')
-  if len(D)>3:
-    ax.plot(D[3][:,0],D[3][:,1], linewidth=3,label='D2D1All')
+
+  ax.plot(D[0][:,0],D[0][:,1], linewidth=3,label='train:D1,test:D1')
+  ax.plot(D[1][:,0],D[1][:,1], linewidth=3,label='train:D2,test:D2')
+  #ax.plot(D[2][:,0],D[2][:,1], linewidth=3,label='train:D2,test:D1')
+  ax.plot(D[2][:,0],Dagg, linewidth=3,label='train:D2,test:All')
+  if len(D)>3 and params[0].find("MRL")!= -1:
+    ax.plot(D[3][:,0],D[3][:,1], linewidth=3,label='train:D2,test:All')
  
   ax.set_title (titleStr, size=25)
   ax.set_xlabel ("iteration", size=30)
@@ -70,7 +79,7 @@ if __name__=="__main__":
   ax.xaxis.set_major_locator(MultipleLocator (500)) ;
   ax.yaxis.set_major_locator(MultipleLocator (0.1)) ;
   ax.yaxis.set_minor_locator(MultipleLocator (0.05)) ;
-  ax.legend(fontsize=20,loc='lower left')
+  ax.legend(fontsize=15,loc='lower left')
   ax.grid(True,which='both');
   x = np.arange(0,(D[1][:,0]).max()+50,1) ;
   ax.fill_between(x,0,1,where=(x>(x.shape[0]/2)),facecolor='gray',alpha=0.3)

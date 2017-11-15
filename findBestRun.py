@@ -6,7 +6,7 @@
 from __future__ import division
 from plotOneExp import readResults
 import sys, os
-import re, numpy as np, math
+import re, numpy as np, math,pickle
 
 from plotOneExp import readResults
 import sys, os, numpy as np
@@ -170,6 +170,9 @@ def printResultMatrix(resultMatrix,taskLookup,paramLookup):
       print "%.4f"%(resultMatrix[taskI,paramI]),
     print param
 
+def writeMatrixToFile(name, resultMatrixTrainRetrain, taskLookup,paramLookup):
+  pickle.dump((resultMatrixTrainRetrain, taskLookup,paramLookup),file(name,"wb")) ;
+
 
 expID = sys.argv[1]
 pathString = "./"
@@ -213,6 +216,8 @@ if evalMode == "realistic":
 
 elif evalMode == "prescient":
   resultMatrixTrainRetrain,taskLookup,paramLookup = calcPerfMatrix(expDict,measureQualityAlexD2D1,measureQualityAlexD2D_1,useMRL) ;
+
+  writeMatrixToFile(expID+".pkl", resultMatrixTrainRetrain, taskLookup,paramLookup)   ;
 
   for task,taskI in taskLookup.iteritems():
     bestParamI = resultMatrixTrainRetrain[taskI,:].argmax() ;
