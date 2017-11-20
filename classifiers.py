@@ -33,14 +33,14 @@ class Classifier(Network):
 
 
     def train_mod(self, sess, model_name, model_init_name, dataset, num_updates, mini_batch_size, fisher_multiplier,
-              learning_rate, testing_data_set, log_frequency=None, dataset_lagged=None, plot_file="ewc.csv", start_at_step=0):  # pass previous dataset as convenience
+              learning_rate, testing_data_sets, log_frequency=None, dataset_lagged=None, plot_files=["ewc.csv"], start_at_step=0):  # pass previous dataset as convenience
         print('training ' + model_name + ' with weights initialized at ' + str(model_init_name))
         self.prepare_for_training(sess, model_name, model_init_name, fisher_multiplier, learning_rate)
         self.save_weights(-1, sess, model_name)
 
-        writer = csv.writer(open(plot_file, "wb"))
+        writers = [csv.writer(open(plot_file, "wb")) for plot_file in plot_files]
         for i in range(start_at_step, num_updates + start_at_step):
-            self.minibatch_sgd_mod(sess, i, dataset, mini_batch_size, log_frequency, testing_data_set, writer)
+            self.minibatch_sgd_mod(sess, i, dataset, mini_batch_size, log_frequency, testing_data_sets, writers)
         self.update_fisher_full_batch(sess, dataset)
         self.save_weights(i, sess, model_name)
         print('finished training ' + model_name)
@@ -59,16 +59,19 @@ class Classifier(Network):
         if log_frequency and i % log_frequency is 0:
             self.evaluate(sess, i, feed_dict)
 
-    def minibatch_sgd_mod(self, sess, i, dataset, mini_batch_size, log_frequency, testing_data_set, csv_writer):
+    def minibatch_sgd_mod(self, sess, i, dataset, mini_batch_size, log_frequency, testing_data_sets, csv_writers):
         batch_xs, batch_ys = dataset.next_batch(mini_batch_size)
         batch_ys = batch_ys.astype("float32")
         feed_dict = self.create_feed_dict(batch_xs, batch_ys)
         sess.run(self.train_step, feed_dict=feed_dict)
 
-        test_batch_xs, test_batch_ys = testing_data_set.next_batch(mini_batch_size)
-        test_feed_dict = self.create_feed_dict(test_batch_xs, test_batch_ys)
-        if log_frequency and i % log_frequency is 0:
-            self.evaluate_mod(sess, i, test_feed_dict, csv_writer)
+        j=0;
+        for testing_data_set in testing_data_sets:
+          test_batch_xs, test_batch_ys = testing_data_set.next_batch(mini_batch_size)
+          test_feed_dict = self.create_feed_dict(test_batch_xs, test_batch_ys)
+          if log_frequency and i % log_frequency is 0:
+              self.evaluate_mod(sess, i, test_feed_dict, csv_writers[j])
+          j = j+1 ;
 
     def evaluate(self, sess, iteration, feed_dict):
         if self.apply_dropout:
