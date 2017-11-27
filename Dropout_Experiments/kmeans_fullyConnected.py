@@ -457,49 +457,52 @@ def train():
         # Training for NN
         for i in range(FLAGS.start_at_step, FLAGS.max_steps + FLAGS.start_at_step):
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
-                xs, ys = dataSetTest.next_batch(1)
-                k_h = 1.0
-                k_i = 1.0
-                score_tr1, score_tr2, score_tr3, score_tr4 = sess.run(
-                    [minimum_dist_tr1, minimum_dist_tr2, minimum_dist_tr3, minimum_dist_tr4],
-                    feed_dict={x: xs, init_graph_1: condition_1, init_graph_2: condition_2, init_graph_3: condition_3,
-                               init_graph_4: condition_4})
-                readout_layer = (np.argmin([score_tr1, score_tr2, score_tr3, score_tr4]) + 1)
-                # print("readout layer for %s is %s " % (np.argmax(ys), readout_layer))
-                # readout_layer = 1
-                if readout_layer == 1:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr1],
-                                           feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
-                                                      global_step: i})
-                elif readout_layer == 2:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr2],
-                                           feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
-                                                      global_step: i})
-                elif readout_layer == 3:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr3],
-                                           feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
-                                                      global_step: i})
-                elif readout_layer == 4:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr4],
-                                           feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
-                                                      global_step: i})
-                elif testing_readout_layer is -1:
-                    _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
-                        [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
-                        feed_dict=feed_dict(False, i))
+                cumm_acc = 0
+                for xx in range(0, dataSetTest.images.shape[0]):
+                    xs, ys = dataSetTest.next_batch(1)
+                    k_h = 1.0
+                    k_i = 1.0
+                    score_tr1, score_tr2, score_tr3, score_tr4 = sess.run(
+                        [minimum_dist_tr1, minimum_dist_tr2, minimum_dist_tr3, minimum_dist_tr4],
+                        feed_dict={x: xs, init_graph_1: condition_1, init_graph_2: condition_2,
+                                   init_graph_3: condition_3,
+                                   init_graph_4: condition_4})
+                    readout_layer = (np.argmin([score_tr1, score_tr2, score_tr3, score_tr4]) + 1)
+                    # print("readout layer for %s is %s " % (np.argmax(ys), readout_layer))
 
-                # test_writer_ds.add_summary(s, i)
-                print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
+                    if readout_layer == 1:
+                        _lr, s, acc = sess.run([lr, merged, accuracy_tr1],
+                                               feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
+                                                          global_step: i})
+                    elif readout_layer == 2:
+                        _lr, s, acc = sess.run([lr, merged, accuracy_tr2],
+                                               feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
+                                                          global_step: i})
+                    elif readout_layer == 3:
+                        _lr, s, acc = sess.run([lr, merged, accuracy_tr3],
+                                               feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
+                                                          global_step: i})
+                    elif readout_layer == 4:
+                        _lr, s, acc = sess.run([lr, merged, accuracy_tr4],
+                                               feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
+                                                          global_step: i})
+                    elif testing_readout_layer is -1:
+                        _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
+                            [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
+                            feed_dict=feed_dict(False, i))
+                    cumm_acc = cumm_acc + acc
+                    # test_writer_ds.add_summary(s, i)
+                print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, cumm_acc))
                 writer.writerow([i, acc])
             else:  # record train set summaries, and run training steps
                 if training_readout_layer is 1:
-                    s, _ = sess.run([merged, train_step_tr1], feed_dict_test(True, i, 1))
+                    s, _ = sess.run([merged, train_step_tr1], feed_dict_test(True, i, 100))
                 elif training_readout_layer is 2:
-                    s, _ = sess.run([merged, train_step_tr2], feed_dict_test(True, i, 1))
+                    s, _ = sess.run([merged, train_step_tr2], feed_dict_test(True, i, 100))
                 elif training_readout_layer is 3:
-                    s, _ = sess.run([merged, train_step_tr3], feed_dict_test(True, i, 1))
+                    s, _ = sess.run([merged, train_step_tr3], feed_dict_test(True, i, 100))
                 elif training_readout_layer is 4:
-                    s, _ = sess.run([merged, train_step_tr4], feed_dict_test(True, i, 1))
+                    s, _ = sess.run([merged, train_step_tr4], feed_dict_test(True, i, 100))
 
         if args.save_model:
             saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt')
