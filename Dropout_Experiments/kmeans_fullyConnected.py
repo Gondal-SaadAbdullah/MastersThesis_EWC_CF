@@ -458,7 +458,8 @@ def train():
         for i in range(FLAGS.start_at_step, FLAGS.max_steps + FLAGS.start_at_step):
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
                 cumm_acc = 0
-                for xx in range(0, dataSetTest.images.shape[0]):
+                total_steps = dataSetTest.images.shape[0]
+                for xx in range(0, total_steps):
                     xs, ys = dataSetTest.next_batch(1)
                     k_h = 1.0
                     k_i = 1.0
@@ -492,8 +493,9 @@ def train():
                             feed_dict=feed_dict(False, i))
                     cumm_acc = cumm_acc + acc
                     # test_writer_ds.add_summary(s, i)
-                print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, cumm_acc))
-                writer.writerow([i, acc])
+                average_accu = cumm_acc/total_steps
+                print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, average_accu))
+                writer.writerow([i, average_accu])
             else:  # record train set summaries, and run training steps
                 if training_readout_layer is 1:
                     s, _ = sess.run([merged, train_step_tr1], feed_dict_test(True, i, 100))
