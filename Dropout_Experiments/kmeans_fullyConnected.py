@@ -116,11 +116,11 @@ def train():
     testing_readout_layer = args.testing_readout_layer
     LOG_FREQUENCY = args.test_frequency
 
-    global init_graph_1, init_graph_2, init_graph_3, init_graph_4
-    init_graph_1 = False
-    init_graph_2 = False
-    init_graph_3 = False
-    init_graph_4 = False
+    global condition_1, condition_2, condition_3, condition_4
+    condition_1 = False
+    condition_2 = False
+    condition_3 = False
+    condition_4 = False
 
     if not os.path.exists("./checkpoints"):
         os.mkdir("./checkpoints")
@@ -377,23 +377,23 @@ def train():
     (all_scores_tr4, cluster_idx_tr4, scores_tr4, cluster_centers_initialized_tr4,
      cluster_centers_var_tr4, init_op_tr4, train_op_tr4) = kmeans_tr4.training_graph()
 
-    condition1 = tf.placeholder(tf.bool, name="condition1")
-    condition2 = tf.placeholder(tf.bool, name="condition2")
-    condition3 = tf.placeholder(tf.bool, name="condition2")
-    condition4 = tf.placeholder(tf.bool, name="condition2")
+    init_graph_1 = tf.placeholder(tf.bool, name="init_graph_1")
+    init_graph_2 = tf.placeholder(tf.bool, name="init_graph_2")
+    init_graph_3 = tf.placeholder(tf.bool, name="init_graph_3")
+    init_graph_4 = tf.placeholder(tf.bool, name="init_graph_4")
 
     with tf.name_scope('test_score_tr1'):
         # minimum_dist_tr1 = tf.reduce_min(tf.reduce_sum(tf.square(tf.subtract(cluster_centers_var_tr1, x)), axis=1))
-        minimum_dist_tr1 = tf.cond(condition1, lambda: tf.reduce_min(
+        minimum_dist_tr1 = tf.cond(init_graph_1, lambda: tf.reduce_min(
             tf.reduce_sum(tf.square(tf.subtract(cluster_centers_var_tr1, x)), axis=1)), lambda: tf.reduce_max(x) * 1000)
     with tf.name_scope('test_score_tr2'):
-        minimum_dist_tr2 = tf.cond(condition2, lambda: tf.reduce_min(
+        minimum_dist_tr2 = tf.cond(init_graph_2, lambda: tf.reduce_min(
             tf.reduce_sum(tf.square(tf.subtract(cluster_centers_var_tr2, x)), axis=1)), lambda: tf.reduce_max(x) * 1000)
     with tf.name_scope('test_score_tr3'):
-        minimum_dist_tr3 = tf.cond(condition3, lambda: tf.reduce_min(
+        minimum_dist_tr3 = tf.cond(init_graph_3, lambda: tf.reduce_min(
             tf.reduce_sum(tf.square(tf.subtract(cluster_centers_var_tr3, x)), axis=1)), lambda: tf.reduce_max(x) * 1000)
     with tf.name_scope('test_score_tr4'):
-        minimum_dist_tr4 = tf.cond(condition4, lambda: tf.reduce_min(
+        minimum_dist_tr4 = tf.cond(init_graph_4, lambda: tf.reduce_min(
             tf.reduce_sum(tf.square(tf.subtract(cluster_centers_var_tr4, x)), axis=1)), lambda: tf.reduce_max(x) * 1000)
 
     # Merge all summaries and write them out to /tmp/tensorflow/mnist/logs
@@ -438,33 +438,51 @@ def train():
             for i in range(0, 10):
                 _ = sess.run(train_op_tr4, feed_dict(True, i))
 
-        init_graph_1 = tf.get_default_graph().get_tensor_by_name("initialized:0").eval()
-        init_graph_2 = tf.get_default_graph().get_tensor_by_name("initialized_1:0").eval()
-        init_graph_3 = tf.get_default_graph().get_tensor_by_name("initialized_2:0").eval()
-        init_graph_4 = tf.get_default_graph().get_tensor_by_name("initialized_3:0").eval()
-        print(init_graph_1, "\n\n", init_graph_2, "\n\n", init_graph_3, "\n\n", init_graph_4)
+        condition_1 = tf.get_default_graph().get_tensor_by_name("initialized:0").eval()
+        condition_2 = tf.get_default_graph().get_tensor_by_name("initialized_1:0").eval()
+        condition_3 = tf.get_default_graph().get_tensor_by_name("initialized_2:0").eval()
+        condition_4 = tf.get_default_graph().get_tensor_by_name("initialized_3:0").eval()
+        print(condition_1, "\n\n", condition_2, "\n\n", condition_3, "\n\n", condition_4)
 
         # get readout layer by testing trained clusters
-        for i in range(0, 10):
-            xs, ys = dataSetTest.next_batch(1)
-            score_tr1, score_tr2, score_tr3, score_tr4 = sess.run(
-                [minimum_dist_tr1, minimum_dist_tr2, minimum_dist_tr3, minimum_dist_tr4],
-                feed_dict={x: xs, condition1: init_graph_1, condition2: init_graph_2, condition3: init_graph_3,
-                           condition4: init_graph_4})
-            print("readout layer for %s is %s " % (
-                np.argmax(ys), (np.argmin([score_tr1, score_tr2, score_tr3, score_tr4]) + 1)))
+        # for i in range(0, 10):
+        #     xs, ys = dataSetTest.next_batch(1)
+        #     score_tr1, score_tr2, score_tr3, score_tr4 = sess.run(
+        #         [minimum_dist_tr1, minimum_dist_tr2, minimum_dist_tr3, minimum_dist_tr4],
+        #         feed_dict={x: xs, init_graph_1: condition_1, init_graph_2: condition_2, init_graph_3: condition_3,
+        #                    init_graph_4: condition_4})
+        #     print("readout layer for %s is %s " % (
+        #         np.argmax(ys), (np.argmin([score_tr1, score_tr2, score_tr3, score_tr4]) + 1)))
 
         # Training for NN
         for i in range(FLAGS.start_at_step, FLAGS.max_steps + FLAGS.start_at_step):
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
-                if testing_readout_layer is 1:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict(False, i))
-                elif testing_readout_layer is 2:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict(False, i))
-                elif testing_readout_layer is 3:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict(False, i))
-                elif testing_readout_layer is 4:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict(False, i))
+                xs, ys = dataSetTest.next_batch(1)
+                k_h = 1.0
+                k_i = 1.0
+                score_tr1, score_tr2, score_tr3, score_tr4 = sess.run(
+                    [minimum_dist_tr1, minimum_dist_tr2, minimum_dist_tr3, minimum_dist_tr4],
+                    feed_dict={x: xs, init_graph_1: condition_1, init_graph_2: condition_2, init_graph_3: condition_3,
+                               init_graph_4: condition_4})
+                readout_layer = (np.argmin([score_tr1, score_tr2, score_tr3, score_tr4]) + 1)
+                # print("readout layer for %s is %s " % (np.argmax(ys), readout_layer))
+                # readout_layer = 1
+                if readout_layer == 1:
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr1],
+                                           feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
+                                                      global_step: i})
+                elif readout_layer == 2:
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr2],
+                                           feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
+                                                      global_step: i})
+                elif readout_layer == 3:
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr3],
+                                           feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
+                                                      global_step: i})
+                elif readout_layer == 4:
+                    _lr, s, acc = sess.run([lr, merged, accuracy_tr4],
+                                           feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
+                                                      global_step: i})
                 elif testing_readout_layer is -1:
                     _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
                         [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
@@ -475,13 +493,13 @@ def train():
                 writer.writerow([i, acc])
             else:  # record train set summaries, and run training steps
                 if training_readout_layer is 1:
-                    s, _ = sess.run([merged, train_step_tr1], feed_dict(True, i))
+                    s, _ = sess.run([merged, train_step_tr1], feed_dict_test(True, i, 1))
                 elif training_readout_layer is 2:
-                    s, _ = sess.run([merged, train_step_tr2], feed_dict(True, i))
-                if training_readout_layer is 3:
-                    s, _ = sess.run([merged, train_step_tr3], feed_dict(True, i))
-                if training_readout_layer is 4:
-                    s, _ = sess.run([merged, train_step_tr4], feed_dict(True, i))
+                    s, _ = sess.run([merged, train_step_tr2], feed_dict_test(True, i, 1))
+                elif training_readout_layer is 3:
+                    s, _ = sess.run([merged, train_step_tr3], feed_dict_test(True, i, 1))
+                elif training_readout_layer is 4:
+                    s, _ = sess.run([merged, train_step_tr4], feed_dict_test(True, i, 1))
 
         if args.save_model:
             saver.save(sess=sess, save_path=args.checkpoints_dir + args.save_model + '.ckpt')
