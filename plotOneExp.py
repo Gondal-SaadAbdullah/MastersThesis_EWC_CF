@@ -66,9 +66,9 @@ if __name__=="__main__":
 
 
   ax.plot(D[0][:,0],D[0][:,1], linewidth=3,label='train:D1,test:D1')
-  ax.plot(D[1][:,0],D[1][:,1], linewidth=3,label='train:D2,test:D2')
+  ax.plot(D[1][:,0]+2000,D[1][:,1], linewidth=3,label='train:D2,test:D2')
   #ax.plot(D[2][:,0],D[2][:,1], linewidth=3,label='train:D2,test:D1')
-  ax.plot(D[2][:,0],Dagg, linewidth=3,label='train:D2,test:All')
+  ax.plot(D[2][:,0]+2000,Dagg, linewidth=3,label='train:D2,test:All')
   if len(D)>3 and params[0].find("MRL")!= -1:
     ax.plot(D[3][:,0],D[3][:,1], linewidth=3,label='train:D2,test:All')
  
