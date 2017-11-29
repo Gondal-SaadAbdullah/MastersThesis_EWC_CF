@@ -355,14 +355,14 @@ def train():
     tf.summary.scalar('accuracy_trAll', accuracy_trAll)
 
     # K-means
-    kmeans_tr1 = KMeans(inputs=x, num_clusters=100, distance_metric='cosine',
-                        use_mini_batch=True)
-    kmeans_tr2 = KMeans(inputs=x, num_clusters=100, distance_metric='cosine',
-                        use_mini_batch=True)
-    kmeans_tr3 = KMeans(inputs=x, num_clusters=100, distance_metric='cosine',
-                        use_mini_batch=True)
-    kmeans_tr4 = KMeans(inputs=x, num_clusters=100, distance_metric='cosine',
-                        use_mini_batch=True)
+    kmeans_tr1 = KMeans(inputs=x, num_clusters=500, #distance_metric=SQUARED_EUCLIDEAN_DISTANCE,
+                        use_mini_batch=False)
+    kmeans_tr2 = KMeans(inputs=x, num_clusters=500, #distance_metric=SQUARED_EUCLIDEAN_DISTANCE,
+                        use_mini_batch=False)
+    kmeans_tr3 = KMeans(inputs=x, num_clusters=500, #distance_metric=SQUARED_EUCLIDEAN_DISTANCE,
+                        use_mini_batch=False)
+    kmeans_tr4 = KMeans(inputs=x, num_clusters=500, #distance_metric=SQUARED_EUCLIDEAN_DISTANCE,
+                        use_mini_batch=False)
 
     # Build KMeans graph
     (all_scores_tr1, cluster_idx_tr1, scores_tr1, cluster_centers_initialized_tr1,
@@ -421,7 +421,7 @@ def train():
         print(time.strftime('%X %x %Z'))
 
         # train cluster for given training set
-        nrStepsForClustering = 1 ;
+        nrStepsForClustering = 1;
         if training_readout_layer is 1:
             sess.run(init_op_tr1, feed_dict={x: dataSetTrain.images})
             for i in range(0, nrStepsForClustering):
@@ -461,8 +461,9 @@ def train():
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
                 cumm_acc = 0
                 total_steps = dataSetTest.images.shape[0]/50 ;
+                dsClass = np.array([0.,0.,0.,0.]) ;
                 for xx in range(0, int(total_steps)):
-                    idx=random.randint(0,dataSetTest.images.shape[0]) ;
+                    idx=random.randint(1,dataSetTest.images.shape[0])-1 ;
                     xs = dataSetTest.images[np.newaxis,idx] ; ys = dataSetTest.labels[np.newaxis,idx] ;
                     #xs, ys = dataSetTest.next_batch(1)
                     k_h = 1.0
@@ -473,6 +474,7 @@ def train():
                                    init_graph_3: condition_3,
                                    init_graph_4: condition_4})
                     readout_layer = (np.argmin([score_tr1, score_tr2, score_tr3, score_tr4]) + 1)                    
+                    dsClass[readout_layer-1]+=1 ;
 
                     if readout_layer == 1:
                         l,s, acc = sess.run([logits_tr1,merged, accuracy_tr1],
@@ -496,7 +498,7 @@ def train():
                     cumm_acc = cumm_acc + acc
                     # test_writer_ds.add_summary(s, i)
                 average_accu = cumm_acc/float(total_steps)
-                print('test set 1 accuracy at step: %s \t \t %s' % (i, average_accu))
+                print('test set 1 accuracy at step: %s \t \t %s' % (i, average_accu), "D1D2 acc=",dsClass/dsClass.sum())
                 writer.writerow([i, average_accu])
             else:  # record train set summaries, and run training steps
                 if training_readout_layer is 1:
