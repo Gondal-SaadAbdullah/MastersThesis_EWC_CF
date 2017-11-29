@@ -421,23 +421,24 @@ def train():
         print(time.strftime('%X %x %Z'))
 
         # train cluster for given training set
+        nrStepsForClustering = 1 ;
         if training_readout_layer is 1:
             sess.run(init_op_tr1, feed_dict={x: dataSetTrain.images})
-            for i in range(0, 10):
+            for i in range(0, nrStepsForClustering):
                 _ = sess.run(train_op_tr1, feed_dict={x: dataSetTrain.images})
         elif training_readout_layer is 2:
             sess.run(init_op_tr2, feed_dict={x: dataSetTrain.images})
-            for i in range(0, 10):
+            for i in range(0, nrStepsForClustering):
                 _ = sess.run(train_op_tr2, feed_dict={x: dataSetTrain.images})
         elif training_readout_layer is 3:
             sess.run(init_op_tr3, feed_dict={x: dataSetTrain.images})
-            for i in range(0, 10):
+            for i in range(0, nrStepsForClustering):
                 _ = sess.run(train_op_tr3, feed_dict={x: dataSetTrain.images})
         elif training_readout_layer is 4:
             sess.run(init_op_tr4, feed_dict={x: dataSetTrain.images})
-            for i in range(0, 10):
+            for i in range(0, nrStepsForClustering):
                 _ = sess.run(train_op_tr4, feed_dict(True, i))
-
+        print ("Trained clustering!")
         condition_1 = tf.get_default_graph().get_tensor_by_name("initialized:0").eval()
         condition_2 = tf.get_default_graph().get_tensor_by_name("initialized_1:0").eval()
         condition_3 = tf.get_default_graph().get_tensor_by_name("initialized_2:0").eval()
@@ -456,11 +457,14 @@ def train():
 
         # Training for NN
         for i in range(FLAGS.start_at_step, FLAGS.max_steps + FLAGS.start_at_step):
+            #print ("Training at step",i)
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
                 cumm_acc = 0
-                total_steps = dataSetTest.images.shape[0]
-                for xx in range(0, total_steps):
-                    xs, ys = dataSetTest.next_batch(1)
+                total_steps = dataSetTest.images.shape[0]/50 ;
+                for xx in range(0, int(total_steps)):
+                    idx=random.randint(0,dataSetTest.images.shape[0]) ;
+                    xs = dataSetTest.images[np.newaxis,idx] ; ys = dataSetTest.labels[np.newaxis,idx] ;
+                    #xs, ys = dataSetTest.next_batch(1)
                     k_h = 1.0
                     k_i = 1.0
                     score_tr1, score_tr2, score_tr3, score_tr4 = sess.run(
@@ -468,33 +472,31 @@ def train():
                         feed_dict={x: xs, init_graph_1: condition_1, init_graph_2: condition_2,
                                    init_graph_3: condition_3,
                                    init_graph_4: condition_4})
-                    readout_layer = (np.argmin([score_tr1, score_tr2, score_tr3, score_tr4]) + 1)
-                    # print("readout layer for %s is %s " % (np.argmax(ys), readout_layer))
+                    readout_layer = (np.argmin([score_tr1, score_tr2, score_tr3, score_tr4]) + 1)                    
 
                     if readout_layer == 1:
-                        _lr, s, acc = sess.run([lr, merged, accuracy_tr1],
+                        l,s, acc = sess.run([logits_tr1,merged, accuracy_tr1],
                                                feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
                                                           global_step: i})
                     elif readout_layer == 2:
-                        _lr, s, acc = sess.run([lr, merged, accuracy_tr2],
+                        l,s, acc = sess.run([logits_tr2,merged, accuracy_tr2],
                                                feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
                                                           global_step: i})
                     elif readout_layer == 3:
-                        _lr, s, acc = sess.run([lr, merged, accuracy_tr3],
+                        l,s, acc = sess.run([ logits_tr3,merged, accuracy_tr3],
                                                feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
                                                           global_step: i})
                     elif readout_layer == 4:
-                        _lr, s, acc = sess.run([lr, merged, accuracy_tr4],
+                        l,s, acc = sess.run([ logits_tr4,merged, accuracy_tr4],
                                                feed_dict={x: xs, y_: ys, keep_prob_input: k_i, keep_prob_hidden: k_h,
                                                           global_step: i})
-                    elif testing_readout_layer is -1:
-                        _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
-                            [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
-                            feed_dict=feed_dict(False, i))
+                    else:
+                      print ("PROBLEM:::!");
+                    #print("readout layer for %s is %s " % (np.argmax(ys), readout_layer), acc,l.argmax())
                     cumm_acc = cumm_acc + acc
                     # test_writer_ds.add_summary(s, i)
-                average_accu = cumm_acc/total_steps
-                print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, average_accu))
+                average_accu = cumm_acc/float(total_steps)
+                print('test set 1 accuracy at step: %s \t \t %s' % (i, average_accu))
                 writer.writerow([i, average_accu])
             else:  # record train set summaries, and run training steps
                 if training_readout_layer is 1:
@@ -514,8 +516,9 @@ def main(_):
     if FLAGS.permuteTrain != -1:
         print("Permutation!!!!!!!!!!!!!")
     if tf.gfile.Exists(FLAGS.log_dir) and not FLAGS.load_model:
-        tf.gfile.DeleteRecursively(FLAGS.log_dir + '/..')
-        tf.gfile.MakeDirs(FLAGS.log_dir)
+        pass ;
+        #tf.gfile.DeleteRecursively(FLAGS.log_dir + '/..')
+        #tf.gfile.MakeDirs(FLAGS.log_dir)
     if FLAGS.train_classes:
         initDataSetsClasses()
     train()
