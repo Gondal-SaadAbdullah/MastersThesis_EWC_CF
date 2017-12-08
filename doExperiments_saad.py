@@ -14,9 +14,9 @@ def getScriptName(expID):
     if expID in ["fc", "D-fc", "fc-MRL", "D-fc-MRL"]:
         return "./Dropout_Experiments/dropout_more_layers.py "
     elif expID in ["conv", "D-conv", "conv-MRL", "D-conv-MRL"]:
-        return "./Dropout_Experiments/convnet_more_layers.py "
+        return "./Dropout_Experiments/dropout_more_layers.py --dnn_model cnn "
     elif expID in ["LWTA-fc", "LWTA-fc-MRL"]:
-        return "./Dropout_Experiments/dropout_more_layers.py --dnn_method lwta "
+        return "./Dropout_Experiments/dropout_more_layers.py --dnn_model lwta "
     elif expID == "EWC":
         return "./ewc_with_options.py"
 
@@ -89,9 +89,7 @@ def generateTaskString(task):
         D2 = "5"
     elif task == "D5b-1e":
         D1 = "3 4 6 8 9"
-        D2 = "7"
-
-        
+        D2 = "7"        
     return D1, D2, D3, D4
 
 def generateUniqueId(expID,params):
@@ -168,7 +166,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
 
         retrain_lr = " --learning_rate " + str(params[2])
         if params[0]  in ["DP10-10","DP5-5"]:
-            execStr = execStr + "--permuteTrain 1 --permuteTest 0"
+            execStr = execStr + "--permuteTrain 1 --permuteTest 0 --permuteTest2 1 --permuteTest3 0"
         execStr = execStr + " " + retrain_lr + " " + train_classes + " " + test_classes + " "+test2_classes+" "+test3_classes+" "+ \
                   " --load_model " + model_name + "_D1D1 --start_at_step "+str(maxSteps)+" "+plotFile1+" "+plotFile2+" "+plotFile3 ;
 
@@ -184,8 +182,6 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         execStr = execStr + " --dropout_hidden 1 --dropout_input 1"
     else:
     # Dropout is default in the programs, this enables dropout
-
-
       if expID.find("conv") != -1:
         execStr = execStr + " --dropout 0.5"
       else:
@@ -245,7 +241,7 @@ combinations = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, laye
 validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
-maxSteps = 1500 ;
+maxSteps = 50 ;
 limit=40000 ;
 n = 0
 index=0 ;

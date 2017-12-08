@@ -378,15 +378,20 @@ def train():
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir) and not FLAGS.load_model:
-        tf.gfile.DeleteRecursively(FLAGS.log_dir + '/..')
-        tf.gfile.MakeDirs(FLAGS.log_dir)
+        #tf.gfile.DeleteRecursively(FLAGS.log_dir + '/..')
+        #tf.gfile.MakeDirs(FLAGS.log_dir)
+        pass ;
     if FLAGS.train_classes:
-        initDataSetsClasses()
-    train()
+        dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3 = initDataSetsClasses()
+    train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = createParser() ;
+    parser.add_argument('--lwtaBlockSize', type=int, default=2,
+                        help='Number of lwta blocks in all hidden layers')
+
+    """
     parser.add_argument('--train_classes', type=int, nargs='*',
                         help="Take only the specified Train classes from MNIST DataSet")
     parser.add_argument('--test_classes', type=int, nargs='*',
@@ -405,8 +410,6 @@ if __name__ == '__main__':
     parser.add_argument('--dropout_input', type=float, default=0.8,
                         help='Keep probability for dropout on input units.')
 
-    parser.add_argument('--lwtaBlockSize', type=int, default=2,
-                        help='Number of lwta blocks in all hidden layers')
     parser.add_argument('--hidden1', type=int, default=128,
                         help='Number of hidden units in layer 1')
     parser.add_argument('--hidden2', type=int, default=32,
@@ -445,6 +448,7 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoints_dir', type=str,
                         default='./checkpoints/',
                         help='Checkpoints log directory')
+    """
 
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

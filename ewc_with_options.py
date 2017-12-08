@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from classifiers import Classifier
+from utilities import *
 
 import tensorflow as tf
 import numpy as np
@@ -31,208 +32,8 @@ IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
 LOG_FREQUENCY = 50
 
-def initDataSetsClasses():
-    global dataSetTrain
-    global dataSetTest
-    global dataSetTest2
-    global dataSetTest3
 
-    print(FLAGS.train_classes, FLAGS.test_classes)
-    # Variable to read out the labels & data of the DataSet Object.
-    mnistData = read_data_sets('./',
-                               one_hot=True)
-    # MNIST labels & data for training.
-    mnistLabelsTrain = mnistData.train.labels
-    mnistDataTrain = mnistData.train.images
-
-    # MNIST labels & data for testing.
-    mnistLabelsTest = mnistData.test.labels
-    mnistDataTest = mnistData.test.images
-    print("LABELS", mnistLabelsTest.shape, mnistLabelsTrain.shape)
-
-    ## starting point:  
-    # TRAINSET: mnistDataTrain, mnistLabelsTrain
-    # TESTSET: mnistDataTest, mnistLabelsTest
-
-    # make a copy
-    mnistDataTest2 = mnistDataTest+0.0 ;
-    mnistLabelsTest2 = mnistLabelsTest+0.0 ;
-
-    # make a copy
-    mnistDataTest3 = mnistDataTest+0.0 ;
-    mnistLabelsTest3 = mnistLabelsTest+0.0 ;
-
-    if FLAGS.permuteTrain != -1:
-        # training dataset
-        np.random.seed(FLAGS.permuteTrain)
-        permTr = np.random.permutation(mnistDataTrain.shape[1])
-        mnistDataTrainPerm = mnistDataTrain[:, permTr]
-        mnistDataTrain = mnistDataTrainPerm;
-        # dataSetTrain = DataSet(255. * dataSetTrainPerm,
-        #                       mnistLabelsTrain, reshape=False)
-    if FLAGS.permuteTest != -1:
-        print ("Permute")
-        # testing dataset
-        np.random.seed(FLAGS.permuteTest)
-        permTs = np.random.permutation(mnistDataTest.shape[1])
-        mnistDataTestPerm = mnistDataTest[:, permTs]
-        # dataSetTest = DataSet(255. * dataSetTestPerm,
-        #                      mnistLabelsTest, reshape=False)
-        mnistDataTest = mnistDataTestPerm;
-    if FLAGS.permuteTest2 != -1:
-        # testing dataset
-        print ("Permute2")
-        np.random.seed(FLAGS.permuteTest2)
-        permTs = np.random.permutation(mnistDataTest.shape[1])
-        mnistDataTestPerm = mnistDataTest[:, permTs]
-        mnistDataTest2 = mnistDataTestPerm;
-    if FLAGS.permuteTest3 != -1:
-        print ("Permute3")
-        # testing dataset
-        np.random.seed(FLAGS.permuteTest3)
-        permTs = np.random.permutation(mnistDataTest.shape[1])
-        mnistDataTestPerm = mnistDataTest[:, permTs]
-        mnistDataTest3 = mnistDataTestPerm;
-
-
-    if True:
-        # args = parser.parse_args()
-        if FLAGS.train_classes[0:]:
-            labels_to_train = [int(i) for i in FLAGS.train_classes[0:]]
-
-        if FLAGS.test_classes[0:]:
-            labels_to_test = [int(i) for i in FLAGS.test_classes[0:]]
-
-        if FLAGS.test2_classes != None:
-            labels_to_test2 = [int(i) for i in FLAGS.test2_classes[0:]]
-        else:
-            labels_to_test2 = []
-
-        if FLAGS.test3_classes != None:
-            labels_to_test3 = [int(i) for i in FLAGS.test3_classes[0:]]
-        else:
-            labels_to_test3 = []
-
-        # Filtered labels & data for training and testing.
-        labels_train_classes = np.array([mnistLabelsTrain[i].argmax() for i in xrange(0,
-                                                                                      mnistLabelsTrain.shape[0]) if
-                                         mnistLabelsTrain[i].argmax()
-                                         in labels_to_train], dtype=np.uint8)
-        data_train_classes = np.array([mnistDataTrain[i, :] for i in xrange(0,
-                                                                            mnistLabelsTrain.shape[0]) if
-                                       mnistLabelsTrain[i].argmax()
-                                       in labels_to_train], dtype=np.float32)
-
-        labels_test_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,mnistLabelsTest.shape[0]) 
-                                                                    if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.uint8)
-        labels_test2_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,mnistLabelsTest.shape[0]) 
-                                                                    if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.uint8)
-        labels_test3_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,mnistLabelsTest.shape[0]) 
-                                                                    if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.uint8)
-        data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,mnistDataTest.shape[0]) 
-                                                          if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.float32) ;
-        data_test2_classes = np.array([mnistDataTest[i, :] for i in xrange(0,mnistDataTest.shape[0]) 
-                                                          if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.float32) ;
-        data_test3_classes = np.array([mnistDataTest[i, :] for i in xrange(0,mnistDataTest.shape[0]) 
-                                                          if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.float32) ;
-
-
-        labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
-        labelsTestOnehot = dense_to_one_hot(labels_test_classes, 10)
-        labelsTest2Onehot = dense_to_one_hot(labels_test2_classes, 10)
-        labelsTest3Onehot = dense_to_one_hot(labels_test3_classes, 10)
-
-        dataSetTrain = DataSet(255. * data_train_classes,
-                               labelsTrainOnehot, reshape=False)
-        dataSetTest = DataSet(255. * data_test_classes,
-                              labelsTestOnehot, reshape=False)
-        dataSetTest2 = DataSet(255. * data_test2_classes,
-                              labelsTest2Onehot, reshape=False)
-        dataSetTest3 = DataSet(255. * data_test3_classes,
-                              labelsTest3Onehot, reshape=False)
-
-        #print ("EQUAL?",np.mean((data_test3_classes==data_test_classes)).astype("float32")) ;
-        print (data_test3_classes.shape, data_test2_classes.shape) ;
-        print (FLAGS.test_classes, FLAGS.test2_classes, FLAGS.test3_classes)
-        print (labels_to_test3,labels_to_test2) ;
-
-
-
-"""
-# Initialize the DataSets for MNIST tasks
-def initDataSetsClasses():
-    global dataSetTrain
-    global dataSetTest
-
-    print(FLAGS.train_classes, FLAGS.test_classes)
-    # Variable to read out the labels & data of the DataSet Object.
-    mnistData = read_data_sets(FLAGS.data_dir,
-                               one_hot=True)
-    # MNIST labels & data for training.
-    mnistLabelsTrain = mnistData.train.labels
-    mnistDataTrain = mnistData.train.images
-
-    # MNIST labels & data for testing.
-    mnistLabelsTest = mnistData.test.labels
-    mnistDataTest = mnistData.test.images
-    print("LABELS", mnistLabelsTest.shape, mnistLabelsTrain.shape)
-
-    if FLAGS.permuteTrain != -1:
-        # training dataset
-        np.random.seed(FLAGS.permuteTrain)
-        permTr = np.random.permutation(mnistDataTrain.shape[1])
-        mnistDataTrainPerm = mnistDataTrain[:, permTr]
-        mnistDataTrain = mnistDataTrainPerm;
-        # dataSetTrain = DataSet(255. * dataSetTrainPerm,
-        #                       mnistLabelsTrain, reshape=False)
-    if FLAGS.permuteTest != -1:
-        # testing dataset
-        np.random.seed(FLAGS.permuteTest)
-        permTs = np.random.permutation(mnistDataTest.shape[1])
-        mnistDataTestPerm = mnistDataTest[:, permTs]
-        # dataSetTest = DataSet(255. * dataSetTestPerm,
-        #                      mnistLabelsTest, reshape=False)
-        mnistDataTest = mnistDataTestPerm;
-
-    if True:
-        # args = parser.parse_args()
-        print(FLAGS.train_classes, FLAGS.test_classes)
-        if FLAGS.train_classes[0:]:
-            labels_to_train = [int(i) for i in FLAGS.train_classes[0:]]
-
-        if FLAGS.test_classes[0:]:
-            labels_to_test = [int(i) for i in FLAGS.test_classes[0:]]
-
-        # Filtered labels & data for training and testing.
-        labels_train_classes = np.array([mnistLabelsTrain[i].argmax() for i in xrange(0,
-                                                                                      mnistLabelsTrain.shape[0]) if
-                                         mnistLabelsTrain[i].argmax()
-                                         in labels_to_train], dtype=np.uint8)
-        data_train_classes = np.array([mnistDataTrain[i, :] for i in xrange(0,
-                                                                            mnistLabelsTrain.shape[0]) if
-                                       mnistLabelsTrain[i].argmax()
-                                       in labels_to_train], dtype=np.float32)
-
-        labels_test_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,
-                                                                                    mnistLabelsTest.shape[0]) if
-                                        mnistLabelsTest[i].argmax()
-                                        in labels_to_test], dtype=np.uint8)
-        data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,
-                                                                          mnistDataTest.shape[0]) if
-                                      mnistLabelsTest[i].argmax()
-                                      in labels_to_test], dtype=np.float32)
-
-        labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
-        labelsTestOnehot = dense_to_one_hot(labels_test_classes, 10)
-
-        dataSetTrain = DataSet(255. * data_train_classes,
-                               labelsTrainOnehot, reshape=False)
-        dataSetTest = DataSet(255. * data_test_classes,
-                              labelsTestOnehot, reshape=False)
-
-"""
-
-def train():
+def train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3):
 
     # Start an Interactive session
     sess = tf.InteractiveSession()
@@ -273,10 +74,11 @@ def train():
 
 def main(_):
     if tf.gfile.Exists(FLAGS.log_dir):
-        tf.gfile.DeleteRecursively(FLAGS.log_dir)
-        tf.gfile.MakeDirs(FLAGS.log_dir)
-    initDataSetsClasses()
-    train()
+        #tf.gfile.DeleteRecursively(FLAGS.log_dir)
+        #tf.gfile.MakeDirs(FLAGS.log_dir)
+        pass ;
+    dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3 = initDataSetsClasses(FLAGS)
+    train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3)
 
 
 if __name__ == '__main__':

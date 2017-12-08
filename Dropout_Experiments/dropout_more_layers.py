@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from utilities import * 
 
 # implements LWTA catastrophic forgetting experiments of Srivastava et al. in Sec. 6
 
@@ -37,135 +38,7 @@ IMAGE_PIXELS = IMAGE_SIZE * IMAGE_SIZE
 
 wdict = {}
 
-
-def initDataSetsClasses():
-    global dataSetTrain
-    global dataSetTest
-    global dataSetTest2
-    global dataSetTest3
-
-    print(FLAGS.train_classes, FLAGS.test_classes)
-    # Variable to read out the labels & data of the DataSet Object.
-    mnistData = read_data_sets('./',
-                               one_hot=True)
-    # MNIST labels & data for training.
-    mnistLabelsTrain = mnistData.train.labels
-    mnistDataTrain = mnistData.train.images
-
-    # MNIST labels & data for testing.
-    mnistLabelsTest = mnistData.test.labels
-    mnistDataTest = mnistData.test.images
-    print("LABELS", mnistLabelsTest.shape, mnistLabelsTrain.shape)
-
-    ## starting point:  
-    # TRAINSET: mnistDataTrain, mnistLabelsTrain
-    # TESTSET: mnistDataTest, mnistLabelsTest
-
-    # make a copy
-    mnistDataTest2 = mnistDataTest+0.0 ;
-    mnistLabelsTest2 = mnistLabelsTest+0.0 ;
-
-    # make a copy
-    mnistDataTest3 = mnistDataTest+0.0 ;
-    mnistLabelsTest3 = mnistLabelsTest+0.0 ;
-
-    if FLAGS.permuteTrain != -1:
-        # training dataset
-        np.random.seed(FLAGS.permuteTrain)
-        permTr = np.random.permutation(mnistDataTrain.shape[1])
-        mnistDataTrainPerm = mnistDataTrain[:, permTr]
-        mnistDataTrain = mnistDataTrainPerm;
-        # dataSetTrain = DataSet(255. * dataSetTrainPerm,
-        #                       mnistLabelsTrain, reshape=False)
-    if FLAGS.permuteTest != -1:
-        print ("Permute")
-        # testing dataset
-        np.random.seed(FLAGS.permuteTest)
-        permTs = np.random.permutation(mnistDataTest.shape[1])
-        mnistDataTestPerm = mnistDataTest[:, permTs]
-        # dataSetTest = DataSet(255. * dataSetTestPerm,
-        #                      mnistLabelsTest, reshape=False)
-        mnistDataTest = mnistDataTestPerm;
-    if FLAGS.permuteTest2 != -1:
-        # testing dataset
-        print ("Permute2")
-        np.random.seed(FLAGS.permuteTest2)
-        permTs = np.random.permutation(mnistDataTest.shape[1])
-        mnistDataTestPerm = mnistDataTest[:, permTs]
-        mnistDataTest2 = mnistDataTestPerm;
-    if FLAGS.permuteTest3 != -1:
-        print ("Permute3")
-        # testing dataset
-        np.random.seed(FLAGS.permuteTest3)
-        permTs = np.random.permutation(mnistDataTest.shape[1])
-        mnistDataTestPerm = mnistDataTest[:, permTs]
-        mnistDataTest3 = mnistDataTestPerm;
-
-
-    if True:
-        # args = parser.parse_args()
-        if FLAGS.train_classes[0:]:
-            labels_to_train = [int(i) for i in FLAGS.train_classes[0:]]
-
-        if FLAGS.test_classes[0:]:
-            labels_to_test = [int(i) for i in FLAGS.test_classes[0:]]
-
-        if FLAGS.test2_classes != None:
-            labels_to_test2 = [int(i) for i in FLAGS.test2_classes[0:]]
-        else:
-            labels_to_test2 = []
-
-        if FLAGS.test3_classes != None:
-            labels_to_test3 = [int(i) for i in FLAGS.test3_classes[0:]]
-        else:
-            labels_to_test3 = []
-
-        # Filtered labels & data for training and testing.
-        labels_train_classes = np.array([mnistLabelsTrain[i].argmax() for i in xrange(0,
-                                                                                      mnistLabelsTrain.shape[0]) if
-                                         mnistLabelsTrain[i].argmax()
-                                         in labels_to_train], dtype=np.uint8)
-        data_train_classes = np.array([mnistDataTrain[i, :] for i in xrange(0,
-                                                                            mnistLabelsTrain.shape[0]) if
-                                       mnistLabelsTrain[i].argmax()
-                                       in labels_to_train], dtype=np.float32)
-
-        labels_test_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,mnistLabelsTest.shape[0]) 
-                                                                    if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.uint8)
-        labels_test2_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,mnistLabelsTest.shape[0]) 
-                                                                    if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.uint8)
-        labels_test3_classes = np.array([mnistLabelsTest[i].argmax() for i in xrange(0,mnistLabelsTest.shape[0]) 
-                                                                    if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.uint8)
-        data_test_classes = np.array([mnistDataTest[i, :] for i in xrange(0,mnistDataTest.shape[0]) 
-                                                          if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.float32) ;
-        data_test2_classes = np.array([mnistDataTest[i, :] for i in xrange(0,mnistDataTest.shape[0]) 
-                                                          if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.float32) ;
-        data_test3_classes = np.array([mnistDataTest[i, :] for i in xrange(0,mnistDataTest.shape[0]) 
-                                                          if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.float32) ;
-
-
-        labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
-        labelsTestOnehot = dense_to_one_hot(labels_test_classes, 10)
-        labelsTest2Onehot = dense_to_one_hot(labels_test2_classes, 10)
-        labelsTest3Onehot = dense_to_one_hot(labels_test3_classes, 10)
-
-        dataSetTrain = DataSet(255. * data_train_classes,
-                               labelsTrainOnehot, reshape=False)
-        dataSetTest = DataSet(255. * data_test_classes,
-                              labelsTestOnehot, reshape=False)
-        dataSetTest2 = DataSet(255. * data_test2_classes,
-                              labelsTest2Onehot, reshape=False)
-        dataSetTest3 = DataSet(255. * data_test3_classes,
-                              labelsTest3Onehot, reshape=False)
-
-        #print ("EQUAL?",np.mean((data_test3_classes==data_test_classes)).astype("float32")) ;
-        print (data_test3_classes.shape, data_test2_classes.shape) ;
-        print (FLAGS.test_classes, FLAGS.test2_classes, FLAGS.test3_classes)
-        print (labels_to_test3,labels_to_test2) ;
-
-
-
-def train():
+def train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3):
     #args = parser.parse_args()
     args = FLAGS ;
     training_readout_layer = args.training_readout_layer
@@ -186,6 +59,8 @@ def train():
             k_i = 1.0
         if FLAGS.dnn_model=='fc':
           return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        elif FLAGS.dnn_model=='cnn':
+          return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i}
         else:
           return {x: xs, y_: ys, global_step: i}
 
@@ -200,6 +75,8 @@ def train():
             k_i = 1.0
         if FLAGS.dnn_model=='fc':
           return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        elif FLAGS.dnn_model=='cnn':
+          return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i}
         else:
           return {x: xs, y_: ys, global_step: i}
 
@@ -214,6 +91,8 @@ def train():
             k_i = 1.0
         if FLAGS.dnn_model=='fc':
           return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i, keep_prob_hidden: k_h}
+        elif FLAGS.dnn_model=='cnn':
+          return {x: xs, y_: ys, global_step: i, keep_prob_input: k_i}
         else:
           return {x: xs, y_: ys, global_step: i}
 
@@ -274,6 +153,62 @@ def train():
             tf.summary.histogram("activation", act)
             return act
 
+    # weights initialization
+    def weight_variable_cnn(shape):
+        initial = tf.truncated_normal(shape, stddev=0.1)
+        return tf.Variable(initial)
+
+    # biases initialization
+    def bias_variable_cnn(shape):
+        initial = tf.constant(0.1, shape=shape)
+        return tf.Variable(initial)
+
+    # define a 2d convolutional layer
+    def conv_layer(input, channels_in, channels_out, name='conv'):
+        with tf.name_scope(name):
+            with tf.name_scope('weights'):
+                W = weight_variable_cnn([5, 5, channels_in, channels_out])
+            with tf.name_scope('biases'):
+                b = bias_variable([channels_out])
+            conv = tf.nn.conv2d(input, W, strides=[1, 1, 1, 1], padding='SAME')
+            act = tf.nn.relu(conv + b)
+            tf.summary.histogram("weights", W)
+            tf.summary.histogram("biases", b)
+            tf.summary.histogram("activation", act)
+            return act
+
+    # define a fully connected layer
+    def fc_layer_cnn(input, channels_in, channels_out, name='fc'):
+        with tf.name_scope(name):
+            with tf.name_scope('weights'):
+                W = weight_variable_cnn([channels_in, channels_out])
+            with tf.name_scope('biases'):
+                b = bias_variable([channels_out])
+            act = tf.nn.relu(tf.matmul(input, W) + b)
+            tf.summary.histogram("weights", W)
+            tf.summary.histogram("biases", b)
+            tf.summary.histogram("activation", act)
+            return act
+
+    # define a readout layer
+    def ro_layer_cnn(input, channels_in, channels_out, name='read'):
+        with tf.name_scope(name):
+            with tf.name_scope('weights'):
+                W = weight_variable_cnn([channels_in, channels_out])
+            with tf.name_scope('biases'):
+                b = bias_variable([channels_out])
+            act = tf.matmul(input, W) + b
+            tf.summary.histogram("weights", W)
+            tf.summary.histogram("biases", b)
+            tf.summary.histogram("activation", act)
+            return act
+
+    # pooling
+    def max_pool_2x2(x):
+        return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
+                              strides=[1, 2, 2, 1], padding='SAME')
+
+
     # Start an Interactive session
     config = tf.ConfigProto()
     config.gpu_options.allow_growth=True
@@ -289,11 +224,11 @@ def train():
     global global_step
     global_step = tf.placeholder(tf.float32, shape=[], name="step")
     logits_tr1 = None; logits_tr2 = None ; logits_tr4 = None ; logitsAll = None ;
+    keep_prob_input = tf.placeholder(tf.float32)
 
     if FLAGS.dnn_model=="fc":
       # apply dropout to the input layer
-      keep_prob_input = tf.placeholder(tf.float32)
-      tf.summary.scalar('dropout_input', keep_prob_input)
+      #tf.summary.scalar('dropout_input', keep_prob_input)
 
       x_drop = tf.nn.dropout(x, keep_prob_input)
 
@@ -349,6 +284,40 @@ def train():
                                     'softmax_linear_tr4')
 
       logitsAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4;
+    elif FLAGS.dnn_model=="cnn":
+      print ("-------------------------------------------------------------------------------------------------**********");
+      x_image = tf.reshape(x, [-1, 28, 28, 1])
+      #tf.summary.image('input', x_image, 9)
+
+      # Create the first convolutional layer
+      # convolve x_image with the weight tensor, add the bias, apply ReLu
+      h_conv1 = conv_layer(x_image, 1, 32, 'h_conv1')
+      # max pooling for first conv layer
+      h_pool1 = max_pool_2x2(h_conv1)
+
+      # Create the second convolutional layer
+      h_conv2 = conv_layer(h_pool1, 32, 64, 'h_conv2')
+      # max pooling for second conv layer
+      h_pool2 = max_pool_2x2(h_conv2)
+
+      # reshape tensor from the pooling layer into a batch of vectors
+      h_pool2_flattened = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
+ 
+      # Create a densely Connected Layer
+      # image size reduced to 7x7, add a fully-connected layer with 1024 neurons
+      # to allow processing on the entire image.
+      h_fc1 = fc_layer_cnn(h_pool2_flattened, 7 * 7 * 64, 1024, 'h_fc1')
+
+      # Apply dropout to the densely connected layer      
+      h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob_input)
+
+      # Create a softmax linear classification layer for the outputs
+      logits_tr1 = ro_layer_cnn(h_fc1_drop, 1024, 10, 'ro_layer_tr1')
+      logits_tr2 = ro_layer_cnn(h_fc1_drop, 1024, 10, 'ro_layer_tr2')
+      logits_tr3 = ro_layer_cnn(h_fc1_drop, 1024, 10, 'ro_layer_tr3')
+      logits_tr4 = ro_layer_cnn(h_fc1_drop, 1024, 10, 'ro_layer_tr4')
+      logitsAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4 ;
+      
     elif FLAGS.dnn_model=="lwta":    
       # Create the first hidden layer
       h_fc1 = lwta_layer(x, IMAGE_PIXELS, FLAGS.hidden1, FLAGS.lwtaBlockSize,
@@ -604,95 +573,12 @@ def main(_):
         #tf.gfile.MakeDirs(FLAGS.log_dir)
         pass ;
     if FLAGS.train_classes:
-        initDataSetsClasses()
-    train()
+      dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3 = initDataSetsClasses(FLAGS) ;
+      train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--train_classes', type=int, nargs='*',
-                        help="Take only the specified Train classes from MNIST DataSet")
-    parser.add_argument('--test_classes', type=int, nargs='*',
-                        help="Take the specified Test classes from MNIST DataSet")
-
-    parser.add_argument('--test2_classes', type=int, nargs='*',
-                        help="Take the specified Test classes from MNIST DataSet. No test if empty")
-    parser.add_argument('--test3_classes', type=int, nargs='*',
-                        help="Take the specified Test classes from MNIST DataSet. No test3 if empty")
-
-    parser.add_argument('--max_steps', type=int, default=2000,
-                        help='Number of steps to run trainer for given data set.')
-
-    parser.add_argument('--permuteTrain', type=int, default=-1,
-                        help='Provide random seed for permutation train. default: no permutation')
-    parser.add_argument('--permuteTest', type=int, default=-1,
-                        help='Provide random seed for permutation test.  default: no permutation')
-    parser.add_argument('--permuteTest2', type=int, default=-1,
-                        help='Provide random seed for permutation test2.  default: no permutation')
-    parser.add_argument('--permuteTest3', type=int, default=-1,
-                        help='Provide random seed for permutation test3.  default: no permutation')
-
-    parser.add_argument('--dropout_hidden', type=float, default=0.5,
-                        help='Keep probability for dropout on hidden units.')
-    parser.add_argument('--dropout_input', type=float, default=0.8,
-                        help='Keep probability for dropout on input units.')
-
-    parser.add_argument('--hidden1', type=int, default=128,
-                        help='Number of hidden units in layer 1')
-    parser.add_argument('--hidden2', type=int, default=32,
-                        help='Number of hidden units in layer 2')
-    parser.add_argument('--hidden3', type=int, default=-1,
-                        help='Number of hidden units in layer 3')
-    parser.add_argument('--batch_size', type=int, default=100,
-                        help='Size of mini-batches we feed from dataSet.')
-    parser.add_argument('--learning_rate', type=float, default=0.01,
-                        help='Initial learning rate')
-    parser.add_argument('--decayStep', type=float, default=100000,
-                        help='decayStep')
-    parser.add_argument('--decayFactor', type=float, default=1.,
-                        help='decayFactor')
-    parser.add_argument('--load_model', type=str,
-                        help='Load previously saved model. Leave empty if no model exists.')
-    parser.add_argument('--save_model', type=str,
-                        help='Provide path to save model.')
-    parser.add_argument('--test_frequency', type=int, default='50',
-                        help='Frequency after which a test cycle runs.')
-    parser.add_argument('--start_at_step', type=int, default='0',
-                        help='Global step should start here, and continue for the specified number of iterations')
-    parser.add_argument('--training_readout_layer', type=int, default='1',
-                        help='Specify the readout layer (1,2,3,4) for training.')
-    parser.add_argument('--testing_readout_layer', type=int, default='1',
-                        help='Specify the readout layer (1,2,3,4) for testing. Make sure this readout is already trained.')
-    parser.add_argument('--testing2_readout_layer', type=int, default='1',
-                        help='Specify the readout layer (1,2,3,4) for second testing. testing2 not applied if test_classes2 is undefined ')
-    parser.add_argument('--testing3_readout_layer', type=int, default='1',
-                        help='Specify the readout layer (1,2,3,4) for third testing. testing2 not applied if test_classes2 is undefined')
-    parser.add_argument('--dnn_model', type=str,
-                        default='fc',
-                        help='Directory for storing input data')
-    parser.add_argument('--lwtaBlockSize', type=int, default=2,
-                        help='Number of lwta blocks in all hidden layers')
-
-    parser.add_argument('--data_dir', type=str,
-                        default='./',
-                        help='Directory for storing input data')
-    parser.add_argument('--log_dir', type=str,
-                        default='./logs/',
-                        help='Summaries log directory')
-    parser.add_argument('--checkpoints_dir', type=str,
-                        default='./checkpoints/',
-                        help='Checkpoints log directory')
-    parser.add_argument('--plot_file', type=str,
-                        default='dropout_more_layers.csv',
-                        help='Filename for csv file to plot. Give .csv extension after file name.')
-    parser.add_argument('--plot_file2', type=str,
-                        default='dropout_more_layers2.csv',
-                        help='Filename for csv file to plot. Give .csv extension after file name.')
-    parser.add_argument('--plot_file3', type=str,
-                        default='dropout_more_layers3.csv',
-                        help='Filename for csv file to plot3. Give .csv extension after file name.')
-
-
+    parser = createParser ();
     FLAGS, unparsed = parser.parse_known_args()
     print ("TEST2=",FLAGS.test2_classes) ;
     print ("--",FLAGS)
