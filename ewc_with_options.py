@@ -48,11 +48,11 @@ def train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3):
     print(time.strftime('%X %x %Z'))
 
     print("Total updates: %s "%((55000 // FLAGS.batch_size) * FLAGS.epochs))
-    testdatalist = [dataSetTest,dataSetTest2,dataSetTest3],
+    testdatalist = [dataSetTest,dataSetTest2,dataSetTest3] ;
     
     if FLAGS.test2_classes==None and FLAGS.test3_classes == None:
       testdatalist = [dataSetTest] ;
-    Classifier.train_mod(classifier, sess=sess, model_name=FLAGS.save_model, model_init_name=FLAGS.load_model,
+    Classifier.train_mod(classifier, sess=sess, model_name=FLAGS.save_model if FLAGS.save_model !=None else "", model_init_name=FLAGS.load_model,
                      dataset = dataSetTrain,
                      num_updates=(FLAGS.max_steps*FLAGS.batch_size*FLAGS.epochs // FLAGS.batch_size) * FLAGS.epochs,
                      dataset_lagged = [0],
@@ -185,7 +185,7 @@ if __name__ == '__main__':
                         help='decayFactor')
     parser.add_argument('--load_model', type=str,
                         help='Load previously saved model. Leave empty if no model exists.')
-    parser.add_argument('--save_model', type=str,
+    parser.add_argument('--save_model', type=str,default = "",
                         help='Provide path to save model.')
     parser.add_argument('--test_frequency', type=int, default='50',
                         help='Frequency after which a test cycle runs.')
