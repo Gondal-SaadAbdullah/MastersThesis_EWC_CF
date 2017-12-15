@@ -34,6 +34,7 @@ class Classifier(Network):
 
     def train_mod(self, sess, model_name, model_init_name, dataset, num_updates, mini_batch_size, fisher_multiplier,
               learning_rate, testing_data_sets, log_frequency=None, dataset_lagged=None, plot_files=["ewc.csv"], start_at_step=0):  # pass previous dataset as convenience
+        print model_init_name, model_name
         print('training ' + model_name + ' with weights initialized at ' + str(model_init_name))
         self.prepare_for_training(sess, model_name, model_init_name, fisher_multiplier, learning_rate)
         self.save_weights(-1, sess, model_name)
