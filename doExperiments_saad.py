@@ -260,6 +260,15 @@ for t in validCombinations:
     #f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write(generateCommandLine(expID,scriptName, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write("rm checkpoints/"+uniqueID+"*\n")
+    zipfilename = expID + "-part-" + str(n) + "_csv.zip"
+    f.write ("zip "+zipfilename+" "+uniqueID+"_D1D1.csv\n") ;
+    f.write ("zip "+zipfilename+" "+uniqueID+"_D2D1.csv\n") ;
+    f.write ("zip "+zipfilename+" "+uniqueID+"_D2D2.csv\n") ;
+    f.write ("zip "+zipfilename+" "+uniqueID+"_D2D-1.csv\n") ;
+    f.write ("rm "+uniqueID+"_D1D1.csv\n") ;
+    f.write ("rm "+uniqueID+"_D2D1.csv\n") ;
+    f.write ("rm "+uniqueID+"_D2D2.csv\n") ;
+    f.write ("rm "+uniqueID+"_D1D-1.csv\n") ;
 
     n += 1
     if n >= int(N_files):
