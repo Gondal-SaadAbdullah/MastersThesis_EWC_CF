@@ -268,7 +268,7 @@ for t in validCombinations:
     f.write ("rm "+uniqueID+"_D1D1.csv\n") ;
     f.write ("rm "+uniqueID+"_D2D1.csv\n") ;
     f.write ("rm "+uniqueID+"_D2D2.csv\n") ;
-    f.write ("rm "+uniqueID+"_D1D-1.csv\n") ;
+    f.write ("rm "+uniqueID+"_D2D-1.csv\n") ;
 
     n += 1
     if n >= int(N_files):
