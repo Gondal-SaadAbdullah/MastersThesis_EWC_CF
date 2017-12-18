@@ -12,7 +12,7 @@ class Classifier(Network):
         super(Classifier, self).__init__(*args, **kwargs)
         self.checkpoint_path = checkpoint_path
         self.summaries_path = summaries_path
-        self.writer = None
+        #self.writer = None
         self.merged = None
         self.optimizer = None
         self.train_step = None
@@ -78,13 +78,13 @@ class Classifier(Network):
         if self.apply_dropout:
             feed_dict.update({self.keep_prob_input: 1.0, self.keep_prob_hidden: 1.0})
         summary, accuracy = sess.run([self.merged, self.accuracy], feed_dict=feed_dict)
-        self.writer.add_summary(summary, iteration)
+        #self.writer.add_summary(summary, iteration)
 
     def evaluate_mod(self, sess, iteration, feed_dict, csv_writer):
         if self.apply_dropout:
             feed_dict.update({self.keep_prob_input: 1.0, self.keep_prob_hidden: 1.0})
         summary, accuracy = sess.run([self.merged, self.accuracy], feed_dict=feed_dict)
-        self.writer.add_summary(summary, iteration)
+        #self.writer.add_summary(summary, iteration)
         print("Accuracy at step %s is: %s" %(iteration, accuracy))
         csv_writer.writerow([iteration, accuracy])
 
@@ -101,7 +101,7 @@ class Classifier(Network):
         sess.run(self.fisher_accumulate_op, feed_dict={self.x_fisher: batch_xs, self.y_fisher: batch_ys})
 
     def prepare_for_training(self, sess, model_name, model_init_name, fisher_multiplier, learning_rate):
-        self.writer = tf.summary.FileWriter(self.summaries_path + model_name, sess.graph)
+        #self.writer = tf.summary.FileWriter(self.summaries_path + model_name, sess.graph)
         self.merged = tf.summary.merge_all()
         self.train_step = self.create_train_step(fisher_multiplier if model_init_name else 0.0, learning_rate)
         init = tf.global_variables_initializer()
