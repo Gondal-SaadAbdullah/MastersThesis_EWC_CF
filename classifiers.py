@@ -34,6 +34,7 @@ class Classifier(Network):
 
     def train_mod(self, sess, model_name, model_init_name, dataset, num_updates, mini_batch_size, fisher_multiplier,
               learning_rate, testing_data_sets, log_frequency=None, dataset_lagged=None, plot_files=["ewc.csv"], start_at_step=0):  # pass previous dataset as convenience
+        print model_init_name, model_name
         print('training ' + model_name + ' with weights initialized at ' + str(model_init_name))
         self.prepare_for_training(sess, model_name, model_init_name, fisher_multiplier, learning_rate)
         self.save_weights(-1, sess, model_name)
@@ -66,7 +67,7 @@ class Classifier(Network):
         sess.run(self.train_step, feed_dict=feed_dict)
 
         j=0;
-        for testing_data_set in testing_data_sets:
+        for testing_data_set in testing_data_sets:          
           test_batch_xs, test_batch_ys = testing_data_set.next_batch(mini_batch_size)
           test_feed_dict = self.create_feed_dict(test_batch_xs, test_batch_ys)
           if log_frequency and i % log_frequency is 0:
@@ -127,6 +128,8 @@ class Classifier(Network):
             return self.optimizer.minimize(self.loss + (fisher_multiplier / 2) * penalty, var_list=self.theta)
 
     def save_weights(self, time_step, sess, model_name):
+        if model_name=="":
+          return ;
         if not os.path.exists(self.checkpoint_path):
             os.makedirs(self.checkpoint_path)
         self.saver.save(sess=sess, save_path=self.checkpoint_path + "/" + model_name + '.ckpt')
