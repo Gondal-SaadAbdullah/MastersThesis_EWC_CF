@@ -21,12 +21,13 @@ def getScriptName(expID):
         return "./ewc_with_options.py"
 
 
-# not complete:!!!!!!!
+# takes a task ID and returns the repartition of classes
+# D1,D2: initial and retraining
+# D3: union for baseline comp.
 def generateTaskString(task):
-    D1 = []
-    D2 = []
-    D3 = []
-    D4 = []
+    D1 = ""
+    D2 = ""
+    D3 = ""
     if task == "D5-5":
         D1 = "0 1 2 3 4"
         D2 = "5 6 7 8 9"
@@ -36,6 +37,21 @@ def generateTaskString(task):
     elif task == "D5-5c":
         D1 = "3 4 6 8 9"
         D2 = "0 1 2 5 7"
+    elif task == "D5-5d":
+        D1 = "0 2 5 6 7"
+        D2 = "1 3 4 8 9"
+    elif task == "D5-5e":
+        D1 = "0 1 3 4 5  "
+        D2 = "2 6 7 8 9"
+    elif task == "D5-5f":
+        D1 = "0 3 4 8 9"
+        D2 = "1 2 5 6 7"
+    elif task == "D5-5g":
+        D1 = "0 5 6 7 8"
+        D2 = "1 2 3 4 9"
+    elif task == "D5-5h":
+        D1 = "0 2 3 6 8"
+        D2 = "1 4 5 7 9"
     elif task == "D9-1":
         D1 = "0 1 2 3 4 5 6 7 8"
         D2 = "9"
@@ -90,7 +106,7 @@ def generateTaskString(task):
     elif task == "D5b-1e":
         D1 = "3 4 6 8 9"
         D2 = "7"        
-    return D1, D2, D3, D4
+    return D1, D2, D1+" "+D2 ;
 
 def generateUniqueId(expID,params):
   h1 = params[3] ;
@@ -99,7 +115,7 @@ def generateUniqueId(expID,params):
     h3 = params[5] ;
   else:
     h3=0 ;
-  return expID + "_" + params[0] + "_lr_" + str(params[1]) + "_retrainlr_"+str(params[2])+"_layers_"+str(h1)+"_"+str(h2)+"_"+str(h3) ;
+  return expID + "_" + params[0] + "_lr_" + str(params[1]) + "_retrainlr_"+str(params[2])+"_layers_"+str(h1)+"%"+str(h2)+"%"+str(h3) ;
 
   
 
@@ -116,7 +132,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
     for i in range(0, nrHiddenLayers):
         hidden_layers += "--hidden" + str(i + 1) + " " + str(params[3 + i]) + " "
 
-    D1, D2, D3, D4 = generateTaskString(params[0])
+    D1, D2, D3 = generateTaskString(params[0])
 
     mlrExperiment = False;
     if expID.find("MRL") != -1:
@@ -171,6 +187,15 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
                   " --load_model " + model_name + "_D1D1 --start_at_step "+str(maxSteps)+" "+plotFile1+" "+plotFile2+" "+plotFile3 ;
 
 
+    elif action == "baseline":
+        train_classes = " --train_classes " + D3 + trainingReadoutStr
+        test_classes = " --test_classes " + D3 + testingReadoutStr
+        train_lr = " --learning_rate " + str(params[1])
+        if params[0]  in ["DP10-10","DP5-5"]:
+            execStr = execStr + " --permuteTrain 1 --permuteTest 0 --joinTrainTest "
+        execStr = execStr + " " + train_lr + " " + train_classes + " " + test_classes + \
+                  " --save_model " + model_name + "_D1D1 --plot_file " + model_name + "_baseline.csv" + " --start_at_step 0"
+      
     else:
         return "??" + action
 
@@ -212,6 +237,9 @@ EWC
 tasks = ["DP5-5","DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
 # cvprRuns
 tasks.extend( ["D5a-1a","D5a-1b","D5a-1c","D5a-1d","D5a-1e","D5b-1a","D5b-1b","D5b-1c","D5b-1d","D5b-1e"]) ;
+# ijcnn runs
+tasks = ["D5-5", "D5-5b", "D5-5c", "D5-5d", "D5-5e", "D5-5f","D5-5g", "D5-5h"]  # missing D8-1-1, D7-1-1-1 for now
+
 train_lrs = [0.001]
 retrain_lrs = [0.001,0.0001, 0.00001]
 # layerSizes = [0,200,400,800]
@@ -255,9 +283,8 @@ for t in validCombinations:
       continue;
     alreadyDone[uniqueID]=True;
     f = files[n] ;
+    #f.write(generateCommandLine(expID,scriptName, "baseline", t,maxSteps=maxSteps) + "\n")   # initial training
     f.write(generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
-    #f.write(generateCommandLine(expID,scriptName, "D2D2", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D2
-    #f.write(generateCommandLine(expID,scriptName, "D2D1", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write(generateCommandLine(expID,scriptName, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write("rm checkpoints/"+uniqueID+"*\n")
     zipfilename = expID + "-part-" + str(n) + "_csv.zip"
