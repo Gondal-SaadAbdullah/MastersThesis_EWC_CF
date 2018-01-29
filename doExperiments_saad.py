@@ -238,7 +238,7 @@ tasks = ["DP5-5","DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"] 
 # cvprRuns
 tasks.extend( ["D5a-1a","D5a-1b","D5a-1c","D5a-1d","D5a-1e","D5b-1a","D5b-1b","D5b-1c","D5b-1d","D5b-1e"]) ;
 # ijcnn runs
-tasks = ["D5-5", "D5-5b", "D5-5c", "D5-5d", "D5-5e", "D5-5f","D5-5g", "D5-5h"]  # missing D8-1-1, D7-1-1-1 for now
+tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D5-5d", "D5-5e", "D5-5f","D5-5g", "D5-5h", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
 
 train_lrs = [0.001]
 retrain_lrs = [0.001,0.0001, 0.00001]
