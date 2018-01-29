@@ -75,8 +75,8 @@ def measureQualityAlexD2(D,wD1,wD2,**kwargs):
 # i = wann erreich D2D2 k M seines max?
 # quality = performance auf gesamtdatensatz zum ZP i
 # aber: lies performance auf D1 aus Datei _D2D-1 ab
-# structure of D is always (D1D1,D2D2,D2D1,D2D-1)
-def measureQualityAlexD2D_1(D,wD1,wD2,**kwargs):
+# structure of D is always (D1D1,D2D2,D2D1,D2DAll)
+def measureQualityAlexDAll(D,wD1,wD2,**kwargs):
     if D is None:
       return -1.0 ;
     if len(D) < 4:
@@ -85,9 +85,10 @@ def measureQualityAlexD2D_1(D,wD1,wD2,**kwargs):
       if d.shape[0] < 20:
         return -1.0 ;
 
-    D2D2 = D[3]
-    maxD2D2 = D2D2[:, 1].max() * 0.999
-    for i in xrange(0, D2D2.shape[0]):
+    D2DAll = D[3]
+    maxD2DAll = D2DAll[:, 1].max() * 0.999
+    return maxD2DAll ;
+    for i in xrange(0, D2DAll.shape[0]):
         if D2D2[i, 1] >= maxD2D2:
           return wD1 * D[3][i, 1] + wD2 * D[1][i, 1]              
 
@@ -228,11 +229,16 @@ steps for each task:
 if evalMode == "realistic":
   resultMatrixTrain,taskLookup,paramLookup,invTaskLookup,invParamLookup = calcPerfMatrix(expDict,measureQualityAlexD1,measureQualityAlexD1,useMRL) ;
   resultMatrixRetrain,taskLookup,paramLookup,invTaskLookup,invParamLookup = calcPerfMatrix(expDict,measureQualityAlexD2,
-                                                                                           measureQualityAlexD2D_1,useMRL) ;
+                                                                                           measureQualityAlexDAll,useMRL) ;
+
+  printResultMatrix(resultMatrixTrain, taskLookup, paramLookup) ;
+  print "!!"
+  printResultMatrix(resultMatrixRetrain, taskLookup, paramLookup) ;
 
   for task,taskI in taskLookup.iteritems():
     bestParamIonD1 = resultMatrixTrain[taskI,:].argmax() ;
-    bestModelOnD1 =invParamLookup[bestParamIonD1] ;
+    bestModelOnD1 = invParamLookup[bestParamIonD1] ;
+    print bestModelOnD1;
     d1arch = getParamValue(bestModelOnD1,"layers") ;
     d1lr = getParamValue(bestModelOnD1,"lr") ;
     bestPerfMeasure=-1.0 ;
@@ -247,8 +253,8 @@ if evalMode == "realistic":
 
 elif evalMode.find("realisticDebug") != -1:
   resultMatrixTrain,taskLookup,paramLookup,invTaskLookup,invParamLookup = calcPerfMatrix(expDict,measureQualityAlexD1,measureQualityAlexD1,useMRL) ;
-  resultMatrixRetrain,taskLookup,paramLookup,invTaskLookup,invParamLookup = calcPerfMatrix(expDict,measureQualityAlexD2,
-                                                                                           measureQualityAlexD2D_1,useMRL) ;
+  resultMatrixRetrain,taskLookup,paramLookup,invTaskLookup,invParamLookup = calcPerfMatrix(expDict,measureQualityAlexDAll,
+                                                                                           measureQualityAlexD2DAll,useMRL) ;
 
   #printResultMatrix(resultMatrixRetrain,taskLookup,paramLookup) ;
 
@@ -266,8 +272,8 @@ elif evalMode.find("realisticDebug") != -1:
 
 
 elif evalMode == "prescient":
-  resultMatrixTrainRetrain,taskLookup,paramLookup,invTaskLookup,invParamLookup = calcPerfMatrix(expDict,measureQualityAlexD2D1,
-                                                                                                measureQualityAlexD2D_1,useMRL) ;
+  resultMatrixTrainRetrain,taskLookup,paramLookup,invTaskLookup,invParamLookup = calcPerfMatrix(expDict,measureQualityAlexDAll,
+                                                                                                measureQualityAlexDAll,useMRL) ;
 
   writeMatrixToFile(expID+".pkl", resultMatrixTrainRetrain, taskLookup,paramLookup)   ;
 
