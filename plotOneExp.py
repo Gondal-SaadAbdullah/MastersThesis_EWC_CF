@@ -78,7 +78,8 @@ if __name__=="__main__":
   ax.set_xlabel ("iteration", size=30)
   ax.set_ylabel ("test accuracy", size=30)
   ax.tick_params(labelsize=22)
-  ax.xaxis.set_major_locator(MultipleLocator (500)) ;
+  majXTick = (D[1][:,0].max()+50)/5 ;
+  ax.xaxis.set_major_locator(MultipleLocator (majXTick)) ;
   ax.yaxis.set_major_locator(MultipleLocator (0.1)) ;
   ax.yaxis.set_minor_locator(MultipleLocator (0.05)) ;
   ax.legend(fontsize=15,loc='lower left')

@@ -235,10 +235,12 @@ if evalMode == "realistic":
   print "!!"
   printResultMatrix(resultMatrixRetrain, taskLookup, paramLookup) ;
 
+  resDict = {}
+  latexStr = expID+ " " ;
   for task,taskI in taskLookup.iteritems():
     bestParamIonD1 = resultMatrixTrain[taskI,:].argmax() ;
     bestModelOnD1 = invParamLookup[bestParamIonD1] ;
-    print bestModelOnD1;
+    #print bestModelOnD1;
     d1arch = getParamValue(bestModelOnD1,"layers") ;
     d1lr = getParamValue(bestModelOnD1,"lr") ;
     bestPerfMeasure=-1.0 ;
@@ -250,6 +252,12 @@ if evalMode == "realistic":
           bestPerfMeasure=perfMeasure ;
           bestParams = params ;
     print 'Task',task, "model=",expID+"_"+task+"_"+bestParams,"retrain perf incremental=",bestPerfMeasure
+    resDict[task] = "%.02f"%(bestPerfMeasure); 
+    
+  print sorted(resDict.keys())
+  for key in sorted(resDict.keys()):
+    latexStr = latexStr+" & "+resDict[key] ;
+  print latexStr ;
 
 elif evalMode.find("realisticDebug") != -1:
   resultMatrixTrain,taskLookup,paramLookup,invTaskLookup,invParamLookup = calcPerfMatrix(expDict,measureQualityAlexD1,measureQualityAlexD1,useMRL) ;
@@ -277,11 +285,20 @@ elif evalMode == "prescient":
 
   writeMatrixToFile(expID+".pkl", resultMatrixTrainRetrain, taskLookup,paramLookup)   ;
 
+  resDict = {}
   for task,taskI in taskLookup.iteritems():
     bestParamI = resultMatrixTrainRetrain[taskI,:].argmax() ;
     bestModel =invParamLookup[bestParamI] ;
     perfMeasure = resultMatrixTrainRetrain[taskI,bestParamI] ;
     print 'Task',task, "model=",expID+"_"+task+"_"+bestModel,"retrain perf incremental=",perfMeasure
+    resDict [task] = "%.02f"%(perfMeasure);
+
+  latexStr = expID+" "
+  print sorted(resDict.keys())
+  for key in sorted(resDict.keys()):
+    latexStr = latexStr+" & "+resDict[key] ;
+  print latexStr ;
+
 
 
 """

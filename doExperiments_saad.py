@@ -17,7 +17,7 @@ def getScriptName(expID):
         return "./Dropout_Experiments/dropout_more_layers.py --dnn_model cnn "
     elif expID in ["LWTA-fc", "LWTA-fc-MRL"]:
         return "./Dropout_Experiments/dropout_more_layers.py --dnn_model lwta "
-    elif expID == "EWC":
+    elif expID == "EWC" or expID=="D-EWC":
         return "./ewc_with_options.py"
 
 
@@ -232,6 +232,7 @@ conv-MRL
 D-conv
 D-conv-MRL
 EWC
+D-EWC
 """
 # mondayRuns
 tasks = ["DP5-5","DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
