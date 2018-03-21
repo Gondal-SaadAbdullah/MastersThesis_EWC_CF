@@ -1,29 +1,105 @@
+import time
 import argparse
+import numpy as np
 import tensorflow as tf
 
-from tuner import HyperparameterTuner
+import preprocess.mnist as preprocess
+import utils
+from model import model_utils
+from model import imm
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--hidden_layers', type=int, default=2, help='the number of hidden layers')
-    parser.add_argument('--hidden_units', type=int, default=800, help='the number of units per hidden layer')
-    parser.add_argument('--num_perms', type=int, default=5, help='the number of tasks')
-    parser.add_argument('--trials', type=int, default=50, help='the number of hyperparameter trials per task')
-    parser.add_argument('--epochs', type=int, default=100, help='the number of training epochs per task')
-    return parser.parse_args()
+print("==> parsing input arguments")
+flags = tf.app.flags
+
+## Data input settings
+flags.DEFINE_boolean("mean_imm", True, "include Mean-IMM")
+flags.DEFINE_boolean("mode_imm", True, "include Mode-IMM")
+
+## Model Hyperparameter 
+flags.DEFINE_float("alpha", -1, "alpha(K) of Mean & Mode IMM (cf. equation (3)~(8) in the article)")
+
+## Training Hyperparameter
+flags.DEFINE_float("epoch", -1, "the number of training epoch")
+flags.DEFINE_string("optimizer", 'SGD', "the method name of optimization. (SGD|Adam|Momentum)")
+flags.DEFINE_float("learning_rate", -1, "learning rate of optimizer")
+flags.DEFINE_integer("batch_size", 50, "mini batch size")
+flags.DEFINE_integer("tasks", 2, "number of tasks")
+flags.DEFINE_string("db", 'mnist.pkl.gz', "database")
+
+FLAGS = flags.FLAGS
+utils.SetDefaultAsNatural(FLAGS)
 
 
-def main():
-    args = parse_args()
-    with tf.Session() as sess:
-        tuner = HyperparameterTuner(sess=sess, hidden_layers=args.hidden_layers, hidden_units=args.hidden_units,
-                                    num_perms=args.num_perms, trials=args.trials, epochs=args.epochs)
-        tuner.search()
-        print(tuner.best_parameters)
+mean_imm = FLAGS.mean_imm
+mode_imm = FLAGS.mode_imm
+alpha = FLAGS.alpha
+optimizer = FLAGS.optimizer
+learning_rate = FLAGS.learning_rate
+epoch = int(FLAGS.epoch)
+batch_size = FLAGS.batch_size
 
-if __name__ == "__main__":
-    main()
+no_of_task = FLAGS.tasks ;
+no_of_node = [784,800,800,10]
+keep_prob_info = [0.8, 0.5, 0.5]
 
 
+# data preprocessing
+# x: train data, y: train labels
+# x_:test data, y_:test labels
+x, y, x_, y_, xyc_info = preprocess.XycPackage()
 
+start = time.time()
+
+with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))) as sess:
+    mlp = imm.TransferNN(no_of_node, (optimizer, learning_rate), keep_prob_info=keep_prob_info)
+
+    sess.run(tf.global_variables_initializer())
+
+    L_copy = []
+    FM = []
+    for i in range(no_of_task):
+        print("")
+        print("================= Train task #%d (%s) ================" % (i+1, optimizer))
+
+        mlp.Train(sess, x[i], y[i], x_[i], y_[i], epoch, mb=batch_size)
+        mlp.Test(sess, [[x[i],y[i]," train"], [x_[i],y_[i]," test"]])
+
+        if mean_imm or mode_imm:
+            L_copy.append(model_utils.CopyLayerValues(sess, mlp.Layers))
+        if mode_imm:
+            FM.append(mlp.CalculateFisherMatrix(sess, x[i], y[i]))
+
+    mlp.TestAllTasks(sess, x_, y_)
+
+
+    alpha_list = [(1-alpha)/(no_of_task-1)] * (no_of_task-1)
+    alpha_list.append(alpha)
+    ######################### Mean-IMM ##########################
+    if mean_imm:
+        print("")
+        print("Main experiment on %s + Mean-IMM, shuffled MNIST" % optimizer)
+        print("============== Train task #%d (Mean-IMM) ==============" % no_of_task)
+
+        LW = model_utils.UpdateMultiTaskLwWithAlphas(L_copy[0], alpha_list, no_of_task)
+        model_utils.AddMultiTaskLayers(sess, L_copy, mlp.Layers, LW, no_of_task)
+        ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False)
+        utils.PrintResults(alpha, ret)
+
+        mlp.TestAllTasks(sess, x_, y_)
+
+    ######################### Mode-IMM ##########################
+    if mode_imm:
+        print("")
+        print("Main experiment on %s + Mode-IMM, shuffled MNIST" % optimizer)
+        print("============== Train task #%d (Mode-IMM) ==============" % no_of_task)
+
+        LW = model_utils.UpdateMultiTaskWeightWithAlphas(FM, alpha_list, no_of_task)
+        model_utils.AddMultiTaskLayers(sess, L_copy, mlp.Layers, LW, no_of_task)
+        ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False)
+        utils.PrintResults(alpha, ret)
+
+        mlp.TestAllTasks(sess, x_, y_)
+
+    print("")
+    print("Time: %.4f s" % (time.time()-start))
