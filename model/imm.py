@@ -126,7 +126,7 @@ class TransferNN(object):
                                                 self.y_:y[ist:ied],
                                                 self.drop_rate:self.keep_prob_info})
                 train_acc += (ied - ist) * acc
-                if mbcount%5==0:
+                if mbcount%50==0:
                   test_acc = self.Test(sess, [[x_,y_,""]], 1000, False)[0]
                   print ('it', mbcount, 'Accuracy', test_acc );
                 mbcount += 1 ;

@@ -12,11 +12,11 @@ import os, sys, itertools
 
 def getScriptName(expID):
     if expID in ["fc", "D-fc", "fc-MRL", "D-fc-MRL"]:
-        return "./Dropout_Experiments/dropout_more_layers.py "
+        return "./dropout_more_layers.py "
     elif expID in ["conv", "D-conv", "conv-MRL", "D-conv-MRL"]:
-        return "./Dropout_Experiments/dropout_more_layers.py --dnn_model cnn "
+        return "./dropout_more_layers.py --dnn_model cnn "
     elif expID in ["LWTA-fc", "LWTA-fc-MRL"]:
-        return "./Dropout_Experiments/dropout_more_layers.py --dnn_model lwta "
+        return "./dropout_more_layers.py --dnn_model lwta "
     elif expID == "EWC" or expID=="D-EWC":
         return "./ewc_with_options.py"
 
