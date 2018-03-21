@@ -5,6 +5,20 @@ from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets.mnist import dense_to_one_hot
 
 
+
+"""
+#uses FLAGS.x:
+  train_classes
+  test_classes
+  test2_classes
+  test3_classes
+  permuteTrain
+  permuteTest
+  permuteTest2
+  permuteTest3
+"""
+  
+
 def initDataSetsClasses(FLAGS):
     """
     global dataSetTrain
