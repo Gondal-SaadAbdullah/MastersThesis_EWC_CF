@@ -120,7 +120,7 @@ def generateUniqueId(expID,params):
   
 
 # not complete!!!
-def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
+def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=2000):
 
     # create layer conf parameters
     if len(params) == 5:
@@ -169,16 +169,16 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         if params[0]  in ["DP10-10","DP5-5"]:
             execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
         execStr = execStr + " " + train_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D1D1 --plot_file " + model_name + "_D1D1.csv" + " --start_at_step 0"
+                  " --save_model " + model_name + "_D1D1 --plot_file " + resultPath + model_name + "_D1D1.csv" + " --start_at_step 0"
     elif action=="D2DAll":     
         train_classes = " --train_classes " + D2 + trainingReadoutStr
         test_classes = " --test_classes " + D1 + testingReadoutStr
         test2_classes = " --test2_classes " + D2 + testing2ReadoutStr
         test3_classes = " --test3_classes " + D1+" "+D2+" " + testing3ReadoutStr
         supp = "_"+action ;       
-        plotFile1 = " --plot_file " + model_name + "_D2D1.csv"
-        plotFile2 = " --plot_file2 " + model_name + "_D2D2.csv"
-        plotFile3 = " --plot_file3 " + model_name + "_D2D-1.csv"
+        plotFile1 = " --plot_file " + resultPath + model_name + "_D2D1.csv"
+        plotFile2 = " --plot_file2 " + resultPath + model_name + "_D2D2.csv"
+        plotFile3 = " --plot_file3 " + resultPath + model_name + "_D2D-1.csv"
 
         retrain_lr = " --learning_rate " + str(params[2])
         if params[0]  in ["DP10-10","DP5-5"]:
@@ -194,7 +194,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
         if params[0]  in ["DP10-10","DP5-5"]:
             execStr = execStr + " --permuteTrain 1 --permuteTest 0 --joinTrainTest "
         execStr = execStr + " " + train_lr + " " + train_classes + " " + test_classes + \
-                  " --save_model " + model_name + "_D1D1 --plot_file " + model_name + "_baseline.csv" + " --start_at_step 0"
+                  " --save_model " + model_name + "_D1D1 --plot_file " + resultPath + model_name + "_baseline.csv" + " --start_at_step 0"
       
     else:
         return "??" + action
@@ -271,6 +271,7 @@ validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
 maxSteps = 2500 ;
+resultPath = "/tmp/ExpDist/" ;
 limit=40000 ;
 n = 0
 index=0 ;
@@ -287,10 +288,10 @@ for t in validCombinations:
     f = files[n] ;
     f.write('--- START ---\n')
     #f.write(generateCommandLine(expID,scriptName, "baseline", t,maxSteps=maxSteps) + "\n")   # initial training
-    f.write(generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
-    f.write(generateCommandLine(expID,scriptName, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
+    f.write(generateCommandLine(expID,scriptName, resultPath, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
+    f.write(generateCommandLine(expID,scriptName, resultPath, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write("rm /home/fdai0114/checkpoints/"+uniqueID+"*\n")
-    f.write('mv /home/fdai0114/%s*.csv /tmp/ExpDist/\n'%(uniqueID,)) ;
+    #f.write('mv /home/fdai0114/%s*.csv /tmp/ExpDist/\n'%(uniqueID,)) ;
     # zipfilename = expID + "-part-" + str(n) + "_csv.zip"
     # f.write ("zip "+zipfilename+" "+uniqueID+"_D1D1.csv\n") ;
     # f.write ("zip "+zipfilename+" "+uniqueID+"_D2D1.csv\n") ;
