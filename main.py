@@ -17,7 +17,7 @@ flags = tf.app.flags
 flags.DEFINE_boolean("mean_imm", True, "include Mean-IMM")
 flags.DEFINE_boolean("mode_imm", True, "include Mode-IMM")
 
-## Model Hyperparameter 
+## Model Hyperparameter
 flags.DEFINE_float("alpha", -1, "alpha(K) of Mean & Mode IMM (cf. equation (3)~(8) in the article)")
 
 ## Training Hyperparameter
@@ -49,36 +49,7 @@ keep_prob_info = [0.8, 0.5, 0.5]
 # x: train data, y: train labels
 # x_:test data, y_:test labels
 x, y, x_, y_, xyc_info = preprocess.XycPackage()
-
-class fakeFlags(object):
-  def __init__(self):
-    self.train_classes = [1,2,3,4,5,6,7,8,9] ;
-    self.test_classes = [1,2,3,4,5,6,7,8,9] ;
-    self.test2_classes = [0] ;
-    self.test3_classes = [0,1,2,3,4,5,6,7,8,9] ;
-    self.permuteTrain = -1;
-    self.permuteTest = -1;
-    self.permuteTest2 = -1;
-    self.permuteTest3 = -1;
-	    
-# alternate data generation
-tmpObj = fakeFlags() ;
-tmpObj.train_classes = [1,2,3,4,5,6,7,8,9] ;
-tmpObj.test_classes = [1,2,3,4,5,6,7,8,9] ;
-tmpObj.test2_classes = [0] ;
-tmpObj.test3_classes = [0,1,2,3,4,5,6,7,8,9] ;
-tmpObj.permuteTrain = -1;
-tmpObj.permuteTest = -1;
-tmpObj.permuteTest2 = -1;
-tmpObj.permuteTest3 = -1;
-tr,tst,tst2,tst3 = initDataSetsClasses(tmpObj) 
-tmpObj.train_classes = [0] ;
-tr2,tst,tst2,tst3 = initDataSetsClasses(tmpObj) 
-x = [tr.images,tr2.images] ;
-y = [tr.labels, tr2.labels] ;
-x_ = [tst.images, tst2.images]
-y_ = [tst.labels, tst2.labels] ;
-xyc_info = [[tr.images, tr.labels, "train1"], [tr2.images,tr2.labels, "train2"], [tst.images,tst.labels,"test1"],[tst2.images, tst2.labels,"test2"],[tst3.images,tst3.labels,"test3"]] ;
+x, y, x_, y_, xyc_info = preprocess.SplitPackage(train_classes = [1,2,3,4,5,6,7,8,9], train2_classes = [0], test_classes = [1,2,3,4,5,6,7,8,9], test2_classes = [0], test3_classes = [0,1,2,3,4,5,6,7,8,9]) ;
 
 start = time.time()
 

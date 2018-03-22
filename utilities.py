@@ -1,7 +1,7 @@
 import numpy as np, argparse;
 
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
-from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet 
+from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets.mnist import dense_to_one_hot
 
 
@@ -25,7 +25,7 @@ def initDataSetsClasses(FLAGS):
     mnistDataTest = mnistData.test.images
     print("LABELS", mnistLabelsTest.shape, mnistLabelsTrain.shape)
 
-    ## starting point:  
+    ## starting point:
     # TRAINSET: mnistDataTrain, mnistLabelsTrain
     # TESTSET: mnistDataTest, mnistLabelsTest
 
@@ -98,17 +98,17 @@ def initDataSetsClasses(FLAGS):
                                        mnistLabelsTrain[i].argmax()
                                        in labels_to_train], dtype=np.float32)
 
-        labels_test_classes = np.array([mnistLabelsTest[i].argmax() for i in range(0,mnistLabelsTest.shape[0]) 
+        labels_test_classes = np.array([mnistLabelsTest[i].argmax() for i in range(0,mnistLabelsTest.shape[0])
                                                                     if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.uint8)
-        labels_test2_classes = np.array([mnistLabelsTest[i].argmax() for i in range(0,mnistLabelsTest.shape[0]) 
+        labels_test2_classes = np.array([mnistLabelsTest[i].argmax() for i in range(0,mnistLabelsTest.shape[0])
                                                                     if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.uint8)
-        labels_test3_classes = np.array([mnistLabelsTest[i].argmax() for i in range(0,mnistLabelsTest.shape[0]) 
+        labels_test3_classes = np.array([mnistLabelsTest[i].argmax() for i in range(0,mnistLabelsTest.shape[0])
                                                                     if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.uint8)
-        data_test_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0]) 
+        data_test_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0])
                                                           if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.float32) ;
-        data_test2_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0]) 
+        data_test2_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0])
                                                           if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.float32) ;
-        data_test3_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0]) 
+        data_test3_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0])
                                                           if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.float32) ;
 
 
