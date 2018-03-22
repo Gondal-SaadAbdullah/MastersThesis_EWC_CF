@@ -12,11 +12,11 @@ import os, sys, itertools
 
 def getScriptName(expID):
     if expID in ["fc", "D-fc", "fc-MRL", "D-fc-MRL"]:
-        return "./dropout_more_layers.py "
+        return "./Dropout_Experiments/dropout_more_layers.py "
     elif expID in ["conv", "D-conv", "conv-MRL", "D-conv-MRL"]:
-        return "./dropout_more_layers.py --dnn_model cnn "
+        return "./Dropout_Experiments/dropout_more_layers.py --dnn_model cnn "
     elif expID in ["LWTA-fc", "LWTA-fc-MRL"]:
-        return "./dropout_more_layers.py --dnn_model lwta "
+        return "./Dropout_Experiments/dropout_more_layers.py --dnn_model lwta "
     elif expID == "EWC" or expID=="D-EWC":
         return "./ewc_with_options.py"
 
@@ -157,7 +157,7 @@ def generateCommandLine(expID,scriptName, action, params,maxSteps=2000):
 
 
     model_name = generateUniqueId(expID,params)
-    print(model_name)
+    #print(model_name)
 
     # execString that is command to all experiments..
     execStr = scriptName + " " + hidden_layers + "--max_steps "+str(maxSteps)+" " ;
@@ -278,25 +278,29 @@ alreadyDone={}
 files = [file(expID + "-part-" + str(n) + ".bash","w") for n in xrange(0,int(N_files))] ;
 for t in validCombinations:
     uniqueID = generateUniqueId(expID,t) ;
+
     #print uniqueID
     if alreadyDone.has_key(uniqueID):
       print "CONT"
       continue;
     alreadyDone[uniqueID]=True;
     f = files[n] ;
+    f.write('--- START ---\n')
     #f.write(generateCommandLine(expID,scriptName, "baseline", t,maxSteps=maxSteps) + "\n")   # initial training
     f.write(generateCommandLine(expID,scriptName, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
     f.write(generateCommandLine(expID,scriptName, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
-    f.write("rm checkpoints/"+uniqueID+"*\n")
-    zipfilename = expID + "-part-" + str(n) + "_csv.zip"
-    f.write ("zip "+zipfilename+" "+uniqueID+"_D1D1.csv\n") ;
-    f.write ("zip "+zipfilename+" "+uniqueID+"_D2D1.csv\n") ;
-    f.write ("zip "+zipfilename+" "+uniqueID+"_D2D2.csv\n") ;
-    f.write ("zip "+zipfilename+" "+uniqueID+"_D2D-1.csv\n") ;
-    f.write ("rm "+uniqueID+"_D1D1.csv\n") ;
-    f.write ("rm "+uniqueID+"_D2D1.csv\n") ;
-    f.write ("rm "+uniqueID+"_D2D2.csv\n") ;
-    f.write ("rm "+uniqueID+"_D2D-1.csv\n") ;
+    f.write("rm /home/fdai0114/checkpoints/"+uniqueID+"*\n")
+    f.write('mv /home/fdai0114/%s*.csv /tmp/ExpDist/\n'%(uniqueID,)) ;
+    # zipfilename = expID + "-part-" + str(n) + "_csv.zip"
+    # f.write ("zip "+zipfilename+" "+uniqueID+"_D1D1.csv\n") ;
+    # f.write ("zip "+zipfilename+" "+uniqueID+"_D2D1.csv\n") ;
+    # f.write ("zip "+zipfilename+" "+uniqueID+"_D2D2.csv\n") ;
+    # f.write ("zip "+zipfilename+" "+uniqueID+"_D2D-1.csv\n") ;
+    # f.write ("rm "+uniqueID+"_D1D1.csv\n") ;
+    # f.write ("rm "+uniqueID+"_D2D1.csv\n") ;
+    # f.write ("rm "+uniqueID+"_D2D2.csv\n") ;
+    # f.write ("rm "+uniqueID+"_D2D-1.csv\n") ;
+    f.write('--- END ---\n')
 
     n += 1
     if n >= int(N_files):
