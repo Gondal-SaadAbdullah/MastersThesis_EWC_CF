@@ -20,9 +20,9 @@ def getScriptName(expID):
     elif expID == "EWC" or expID=="D-EWC":
         return "python ./ewc_with_options.py"
     elif expID == "wtIMM":
-        return "python3 ./main.py " ;
+        return "python ./main.py " ;
     elif expID == "l2tIMM":
-        return "python3 ./main_l2.py"
+        return "python ./main_l2.py"
 
 
 # takes a task ID and returns the repartition of classes
