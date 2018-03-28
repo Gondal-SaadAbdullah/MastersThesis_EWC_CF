@@ -130,7 +130,7 @@ class TransferNN(object):
                   test_acc = self.Test(sess, [[x_,y_,""]], 1000, False)[0]
                   print ('it', mbcount, 'Accuracy', test_acc );
                   if logTo is not None:
-                    logTo.write ('it', mbcount, 'Accuracy', test_acc+"\n" );
+                    logTo.write ('it ' + str(mbcount) +  ' Accuracy ' + str(test_acc)+"\n" );
                 mbcount += 1 ;
             train_acc /= data_size
 
@@ -151,9 +151,9 @@ class TransferNN(object):
             acc_ret.append(acc)
 
             if debug: 
-                print("%s accuracy : %.4f" % (comment, acc))
-                if logTo is not None:
-                  logTo.write("%s accuracy : %.4f" % (comment, acc)°"\n")
+              print("%s accuracy : %.4f" % (comment, acc))
+              if logTo is not None:
+                  logTo.write("%s accuracy : %.4f" % (comment, acc)+"\n")
   
         return acc_ret
 

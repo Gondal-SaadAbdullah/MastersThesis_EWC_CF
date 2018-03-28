@@ -149,11 +149,9 @@ with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=Tru
 
           LW = model_utils.UpdateMultiTaskLwWithAlphas(L_copy[0], alpha_list, no_of_task)
           model_utils.AddMultiTaskLayers(sess, L_copy, mlp.Layers, LW, no_of_task)
-          ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False, logTo=plotFile)
+          ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False)
           utils.PrintResults(alpha, ret,logTo=plotfile)
-
           mlp.TestAllTasks(sess, x_, y_,logTo=plotfile)
-
       ######################### Mode-IMM ##########################
       if mode_imm:
         print("")
@@ -166,10 +164,12 @@ with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=Tru
 
         LW = model_utils.UpdateMultiTaskWeightWithAlphas(FM, alpha_list, no_of_task)
         model_utils.AddMultiTaskLayers(sess, L_copy, mlp.Layers, LW, no_of_task)
-        ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False,logTo=plotfile)
+        ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False)
         utils.PrintResults(alpha, ret,logTo=plotfile)
 
         mlp.TestAllTasks(sess, x_, y_,logTo=plotfile)
 
     #print("")
     #print("Time: %.4f s" % (time.time()-start))
+    if plotfile is not None:
+      plotfile.close() ;

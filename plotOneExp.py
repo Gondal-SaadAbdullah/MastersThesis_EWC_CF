@@ -87,7 +87,7 @@ if __name__=="__main__":
   x = np.arange(0,(D[1][:,0]).max()+50,1) ;
   ax.fill_between(x,0,1,where=(x>(x.shape[0]/2)),facecolor='gray',alpha=0.3)
   plt.tight_layout()
-  figName = sys.argv[1]+".png" ;
-  plt.savefig("fig.png") ;
+  figName = sys.argv[1]+".pdf" ;
+  plt.savefig("fig.pdf") ;
   plt.savefig(figName) ;
 
