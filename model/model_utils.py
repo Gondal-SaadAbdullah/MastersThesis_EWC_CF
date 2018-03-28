@@ -1,6 +1,6 @@
 import os
 import time
-import numpy as np
+import numpy as np,sys
 
 import tensorflow as tf
 
@@ -134,7 +134,7 @@ def UpdateMultiTaskWeightWithAlphas(Fs, alpha_list, noOfTask):
 
     return Lw
 
-def PrintLayers(sess, L):
+def PrintLayers(sess, L,logTo=sys.stdout):
     print("Welcome to my PrintLayers.")
     for l in range(len(L)):
         shape = np.asarray(L[l].W.get_shape().as_list())
@@ -142,7 +142,7 @@ def PrintLayers(sess, L):
         print("Level", l+1, ":", np.r_[shape, W_[0,0:2],W_[-1,-2:],b_[0],b_[-1]])
     print("")
 
-def PrintLayers2(L):
+def PrintLayers2(L,logTo=sys.stdout):
     print("Welcome to my PrintLayers.")
     for l in range(len(L)):
         shape = L[l]['W'].shape

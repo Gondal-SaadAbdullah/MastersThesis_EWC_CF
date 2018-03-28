@@ -183,7 +183,7 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
         if params[0]  in ["DP10-10","DP5-5"]:
             execStr = execStr + " --permuteTrain2 1 --permuteTest2 1 "
         execStr = execStr + " " + train_lr+" "+retrain_lr + " " + train_classes + " " + test_classes + " "+train2_classes+" "+ \
-                  test2_classes+" "+test3_classes+" "+ " > "+plotFile ;
+                  test2_classes+" "+test3_classes+" "+ " --plotFile "+plotFile ;
         return execStr ;
 
     execStr = execStr + "--max_steps "+str(maxSteps)+" " ;
@@ -300,7 +300,7 @@ validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 
 # params ****************************
 maxSteps = 2500 ;
-resultPath = "/tmp/ExpDist/" ;
+resultPath = "/home/fdai0114/" ;
 checkpointPath ="/tmp/checkpoints/"
 # ***********************************
 limit=40000 ;
@@ -322,7 +322,7 @@ for t in validCombinations:
     f.write(generateCommandLine(expID,scriptName, resultPath, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
     f.write(generateCommandLine(expID,scriptName, resultPath, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     f.write("rm "+checkpointPath+uniqueID+"*\n") ;
-    #f.write('mv /home/fdai0114/%s*.csv /tmp/ExpDist/\n'%(uniqueID,)) ;
+    f.write('mv /home/fdai0114/%s*.csv /tmp/ExpDist/\n'%(uniqueID,)) ;
     # zipfilename = expID + "-part-" + str(n) + "_csv.zip"
     # f.write ("zip "+zipfilename+" "+uniqueID+"_D1D1.csv\n") ;
     # f.write ("zip "+zipfilename+" "+uniqueID+"_D2D1.csv\n") ;

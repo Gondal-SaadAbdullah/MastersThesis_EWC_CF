@@ -38,7 +38,7 @@ flags.DEFINE_integer("hidden1", 200, "neurons in hl1")
 flags.DEFINE_integer("hidden2", 200, "neurons in hl2")
 flags.DEFINE_integer("hidden3", 0, "neurons in hl3")
 #flags.DEFINE_integer("max_steps", 1000, "steps to perform")
-#flags.DEFINE_string("plot_file", 'plot.csv', "where to store results?")
+flags.DEFINE_string("plot_file", '', "where to store results?")
 #flags.DEFINE_string("plot2_file", 'plot2.csv', "where to store results?")
 #flags.DEFINE_string("plot3_file", 'plot3.csv', "where to store results?")
 flags.DEFINE_string("save_model", 'xxx', "dummy")
@@ -78,6 +78,10 @@ else:
   keep_prob_info = [0.8, 0.5, 0.5, 0.5]
 #keep_prob_info = [0.8, 0.5, 0.5, 0.5]
 
+plotfile=None ;
+if len(FLAGS.plot_file) > 0:
+  plotfile = file(FLAGS.plot_file,"w") ;
+
 
 def convert2List (s):
   return [int (x) for x in s.split()] ;
@@ -115,16 +119,19 @@ with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=Tru
     for i in range(no_of_task):
         print("")
         print("================= Train task #%d (%s) ================" % (i+1, optimizer))
+        if plotfile is not None:
+          plotfile.write("\n")
+          plotfile.write("================= Train task #%d (%s) ================" % (i+1, optimizer)+"\n")
 
-        mlp.Train(sess, x[i], y[i], x_[i], y_[i], epoch, mb=batch_size)
-        mlp.Test(sess, [[x[i],y[i]," train"], [x_[i],y_[i]," test"]])
+        mlp.Train(sess, x[i], y[i], x_[i], y_[i], epoch, mb=batch_size, logTo=plotfile)
+        mlp.Test(sess, [[x[i],y[i]," train"], [x_[i],y_[i]," test"]], logTo=plotfile)
 
         if mean_imm or mode_imm:
             L_copy.append(model_utils.CopyLayerValues(sess, mlp.Layers))
         if mode_imm:
             FM.append(mlp.CalculateFisherMatrix(sess, x[i], y[i]))
 
-    mlp.TestAllTasks(sess, x_, y_)
+    mlp.TestAllTasks(sess, x_, y_, logTo=plotfile)
 
     for alphaInt in range(0,50):
       alpha = float(alphaInt)/50.0
@@ -134,27 +141,35 @@ with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=Tru
       if mean_imm:
           print("")
           print("Main experiment on %s + Mean-IMM, alpha=%.03f, shuffled MNIST" % (optimizer,alpha))
-          print("============== Train task #%d (Mean-IMM) ==============" % no_of_task)
+          print("============== Train task #%d (Mean-IMM) ==============" % no_of_task) ;
+          if plotfile is not None:
+            plotfile.write("\n")
+            plotfile.write("Main experiment on %s + Mean-IMM, alpha=%.03f, shuffled MNIST" % (optimizer,alpha)+"\n")
+            plotfile.write("============== Train task #%d (Mean-IMM) ==============" % no_of_task+"\n") ;
 
           LW = model_utils.UpdateMultiTaskLwWithAlphas(L_copy[0], alpha_list, no_of_task)
           model_utils.AddMultiTaskLayers(sess, L_copy, mlp.Layers, LW, no_of_task)
-          ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False)
-          utils.PrintResults(alpha, ret)
+          ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False, logTo=plotFile)
+          utils.PrintResults(alpha, ret,logTo=plotfile)
 
-          mlp.TestAllTasks(sess, x_, y_)
+          mlp.TestAllTasks(sess, x_, y_,logTo=plotfile)
 
       ######################### Mode-IMM ##########################
       if mode_imm:
         print("")
         print("Main experiment on %s + Mode-IMM, alpha=%.03f, shuffled MNIST" % (optimizer,alpha))
         print("============== Train task #%d (Mode-IMM) ==============" % no_of_task)
+        if plotfile is not None:
+          plotfile.write("\n")
+          plotfile.write("Main experiment on %s + Mode-IMM, alpha=%.03f, shuffled MNIST" % (optimizer,alpha)+"\n")
+          plotfile.write("============== Train task #%d (Mode-IMM) ==============" % no_of_task+"\n")
 
         LW = model_utils.UpdateMultiTaskWeightWithAlphas(FM, alpha_list, no_of_task)
         model_utils.AddMultiTaskLayers(sess, L_copy, mlp.Layers, LW, no_of_task)
-        ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False)
-        utils.PrintResults(alpha, ret)
+        ret = mlp.TestTasks(sess, x, y, x_, y_, debug = False,logTo=plotfile)
+        utils.PrintResults(alpha, ret,logTo=plotfile)
 
-        mlp.TestAllTasks(sess, x_, y_)
+        mlp.TestAllTasks(sess, x_, y_,logTo=plotfile)
 
-    print("")
-    print("Time: %.4f s" % (time.time()-start))
+    #print("")
+    #print("Time: %.4f s" % (time.time()-start))

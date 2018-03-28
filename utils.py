@@ -1,4 +1,4 @@
-import os
+import os,sys
 import time
 import numpy as np
 
@@ -16,7 +16,7 @@ def SetDefaultAsNatural(FLAGS):
     if hasattr(FLAGS, 'alpha') and FLAGS.alpha < 0:
         FLAGS.alpha = 1.0 / 3
 
-def PrintResults(alpha, results):
+def PrintResults(alpha, results, logTo=None):
     """
     print accuracy results.
 
@@ -30,4 +30,7 @@ def PrintResults(alpha, results):
         result_text += ", train-idx%d: %.4f" % (i+1, results[i])
     for i in range(int(len(results)/2)):
         result_text += ", test-idx%d: %.4f" % (i+1, results[i + int(len(results)/2)])
+    if logTo is not None:
+      logTo.write(result_text+'\n') ;
+
     print(result_text)

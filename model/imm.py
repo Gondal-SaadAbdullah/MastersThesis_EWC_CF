@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import math
+import math,sys
 
 import utils
 from model.linear_layer import Linear, RegLinear, DropLinear
@@ -107,7 +107,7 @@ class TransferNN(object):
         
         return FM
 
-    def Train(self, sess, x, y, x_, y_, epoch, mb=50):
+    def Train(self, sess, x, y, x_, y_, epoch, mb=50,logTo=None):
 		# how many samples in train set
         data_size = x.shape[0]
         
@@ -129,14 +129,19 @@ class TransferNN(object):
                 if mbcount%50==0:
                   test_acc = self.Test(sess, [[x_,y_,""]], 1000, False)[0]
                   print ('it', mbcount, 'Accuracy', test_acc );
+                  if logTo is not None:
+                    logTo.write ('it', mbcount, 'Accuracy', test_acc+"\n" );
                 mbcount += 1 ;
             train_acc /= data_size
 
             test_acc = self.Test(sess, [[x_,y_,""]], 1000, False)[0]
             print("(%d, %d, %d, %.4f, %.4f)" % (e+1, (e+1)*total_step,
                 (e+1)*data_size, train_acc, test_acc))
+            if logTo is not None:
+              logTo.write("(%d, %d, %d, %.4f, %.4f)" % (e+1, (e+1)*total_step,
+                (e+1)*data_size, train_acc, test_acc)+"\n")
 
-    def Test(self, sess, xyc_info, mb=1000, debug=True): #ti: triple_info
+    def Test(self, sess, xyc_info, mb=1000, debug=True,logTo=None): #ti: triple_info
         acc_ret = []
 
         for l in range(len(xyc_info)):
@@ -147,7 +152,9 @@ class TransferNN(object):
 
             if debug: 
                 print("%s accuracy : %.4f" % (comment, acc))
-
+                if logTo is not None:
+                  logTo.write("%s accuracy : %.4f" % (comment, acc)°"\n")
+  
         return acc_ret
 
     def _Test(self, sess, x_, y_, mb):
@@ -186,7 +193,7 @@ class TransferNN(object):
      
         return self.Test(sess, xyc_info, mb=mb, debug=debug)
 
-    def TestAllTasks(self, sess, x_tasks, y_tasks, mb=1000, debug=True): #ti: triple_info
+    def TestAllTasks(self, sess, x_tasks, y_tasks, mb=1000, debug=True,logTo=None): #ti: triple_info
         acc_ret = []
         for l in range(len(x_tasks)):
             x_ = x_tasks[l]
@@ -194,7 +201,11 @@ class TransferNN(object):
             acc = self._Test(sess, x_, y_, mb)
             acc_ret.append(acc)
         print(acc_ret)
+        if logTo is not None:        
+          logTo.write(str(acc_ret)+"\n") ;
         if debug: 
             print("%s all test accuracy : %.4f" % (self.name, np.average(acc_ret)))
+            if logTo is not None:
+              logTo.write("%s all test accuracy : %.4f" % (self.name, np.average(acc_ret))+"\n")
 
         return acc_ret
