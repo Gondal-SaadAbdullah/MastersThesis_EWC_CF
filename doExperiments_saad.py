@@ -4,21 +4,25 @@
 # D1D1: training on D1, test on D1
 # D2D1: training on D2, test on D1
 # D2D2: training on D2, test on D2
-# D2D-1: training on D2, test on D1uD2 using all readout layers. This should be identical to test 
+# D2D-1: training on D2, test on D1uD2 using all readout layers. This should be identical to test
 # with one readout layer only for non-MRL experiments
-# 
+#
 import os, sys, itertools
 
 
 def getScriptName(expID):
     if expID in ["fc", "D-fc", "fc-MRL", "D-fc-MRL"]:
-        return "./Dropout_Experiments/dropout_more_layers.py "
+        return "python ./Dropout_Experiments/dropout_more_layers.py "
     elif expID in ["conv", "D-conv", "conv-MRL", "D-conv-MRL"]:
-        return "./Dropout_Experiments/dropout_more_layers.py --dnn_model cnn "
+        return "python ./Dropout_Experiments/dropout_more_layers.py --dnn_model cnn "
     elif expID in ["LWTA-fc", "LWTA-fc-MRL"]:
-        return "./Dropout_Experiments/dropout_more_layers.py --dnn_model lwta "
+        return "python ./Dropout_Experiments/dropout_more_layers.py --dnn_model lwta "
     elif expID == "EWC" or expID=="D-EWC":
-        return "./ewc_with_options.py"
+        return "python ./ewc_with_options.py"
+    elif expID == "wtIMM":
+        return "python3 ./main.py " ;
+    elif expID == "l2tIMM":
+        return "python3 ./main_l2.py"
 
 
 # takes a task ID and returns the repartition of classes
@@ -105,9 +109,11 @@ def generateTaskString(task):
         D2 = "5"
     elif task == "D5b-1e":
         D1 = "3 4 6 8 9"
-        D2 = "7"        
+        D2 = "7"
     return D1, D2, D1+" "+D2 ;
 
+# takes an experimental ID (see getScriptName) and combines it with the paramaters
+# to obtain an unique ID for an experiment 'expID' with parameters 'params'
 def generateUniqueId(expID,params):
   h1 = params[3] ;
   h2 = params[4] ;
@@ -117,7 +123,7 @@ def generateUniqueId(expID,params):
     h3=0 ;
   return expID + "_" + params[0] + "_lr_" + str(params[1]) + "_retrainlr_"+str(params[2])+"_layers_"+str(h1)+"%"+str(h2)+"%"+str(h3) ;
 
-  
+
 
 # not complete!!!
 def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=2000):
@@ -128,7 +134,7 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
     else:
         nrHiddenLayers = 3
     hidden_layers = ""
-    
+
     for i in range(0, nrHiddenLayers):
         hidden_layers += "--hidden" + str(i + 1) + " " + str(params[3 + i]) + " "
 
@@ -151,16 +157,36 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
         testing2ReadoutStr = " --testing2_readout_layer 2" ;
         testing3ReadoutStr = " --testing3_readout_layer -1" ;
 
-    if expID=="EWC" and action =="D2D-1":
-      return "# no D2D-1";
-      
-
 
     model_name = generateUniqueId(expID,params)
     #print(model_name)
 
     # execString that is command to all experiments..
-    execStr = scriptName + " " + hidden_layers + "--max_steps "+str(maxSteps)+" " ;
+    execStr = scriptName + " " + hidden_layers + " ";
+
+    if expID in ["wtIMM", "l2tIMM"]:
+      if action == "D2DAll":
+        return "# all is done in D1D1 step" ;
+      else:
+        train_classes = " --train_classes " + D1 + " ";
+        test_classes = " --test_classes " + D1 + " ";
+        train_lr = " --learning_rate " + str(params[1])
+        if params[0]  in ["DP10-10","DP5-5"]:
+            execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
+        train2_classes = " --train2_classes " + D2 + " ";
+        test2_classes = " --test2_classes " + D2 + " ";
+        test3_classes = "" ;
+        supp = "_"+action ;
+        plotFile =  resultPath + model_name+".csv"
+
+        retrain_lr = " --learning_rate2 " + str(params[2])
+        if params[0]  in ["DP10-10","DP5-5"]:
+            execStr = execStr + " --permuteTrain2 1 --permuteTest2 1 "
+        execStr = execStr + " " + train_lr+" "+retrain_lr + " " + train_classes + " " + test_classes + " "+train2_classes+" "+ \
+                  test2_classes+" "+test3_classes+" "+ " > "+plotFile ;
+        return execStr ;
+
+    execStr = execStr + "--max_steps "+str(maxSteps)+" " ;
 
     if action == "D1D1":
         train_classes = " --train_classes " + D1 + trainingReadoutStr
@@ -170,12 +196,12 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
             execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
         execStr = execStr + " " + train_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D1D1 --plot_file " + resultPath + model_name + "_D1D1.csv" + " --start_at_step 0"
-    elif action=="D2DAll":     
+    elif action=="D2DAll":
         train_classes = " --train_classes " + D2 + trainingReadoutStr
         test_classes = " --test_classes " + D1 + testingReadoutStr
         test2_classes = " --test2_classes " + D2 + testing2ReadoutStr
         test3_classes = " --test3_classes " + D1+" "+D2+" " + testing3ReadoutStr
-        supp = "_"+action ;       
+        supp = "_"+action ;
         plotFile1 = " --plot_file " + resultPath + model_name + "_D2D1.csv"
         plotFile2 = " --plot_file2 " + resultPath + model_name + "_D2D2.csv"
         plotFile3 = " --plot_file3 " + resultPath + model_name + "_D2D-1.csv"
@@ -195,7 +221,7 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
             execStr = execStr + " --permuteTrain 1 --permuteTest 0 --joinTrainTest "
         execStr = execStr + " " + train_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D1D1 --plot_file " + resultPath + model_name + "_baseline.csv" + " --start_at_step 0"
-      
+
     else:
         return "??" + action
 
@@ -211,7 +237,7 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
         execStr = execStr + " --dropout 0.5"
       else:
         execStr = execStr + " --dropout_hidden 0.8 --dropout_input 0.5"
-    
+
 
     return execStr.replace("\n"," ")
 
@@ -219,7 +245,7 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
 expID = sys.argv[1]
 N_files = sys.argv[2]   # number of files the experiment is divided into!
 
-scriptName = "python "+getScriptName(expID)
+scriptName = getScriptName(expID)
 # tasks
 """
 fc
@@ -233,13 +259,15 @@ D-conv
 D-conv-MRL
 EWC
 D-EWC
+wtIMM
+l2tIMM
 """
 # mondayRuns
 tasks = ["DP5-5","DP10-10", "D5-5", "D5-5b", "D5-5c", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
 # cvprRuns
 tasks.extend( ["D5a-1a","D5a-1b","D5a-1c","D5a-1d","D5a-1e","D5b-1a","D5b-1b","D5b-1c","D5b-1d","D5b-1e"]) ;
 # ijcnn runs
-tasks = ["DP10-10", "D5-5", "D5-5b", "D5-5c", "D5-5d", "D5-5e", "D5-5f","D5-5g", "D5-5h", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
+tasks = ["D5-5", "DP5-5", "DP10-10",  "D5-5b", "D5-5c", "D5-5d", "D5-5e", "D5-5f","D5-5g", "D5-5h", "D9-1", "D9-1b", "D9-1c"]  # missing D8-1-1, D7-1-1-1 for now
 
 train_lrs = [0.001]
 retrain_lrs = [0.001,0.0001, 0.00001]
@@ -264,14 +292,17 @@ def correctParams(t):
     return t ;
 
 #def removeCheckpoints(checkpointDir,uniqueID):
-#  list = 
+#  list =
 
 combinations = itertools.product(tasks, train_lrs, retrain_lrs, layerSizes, layerSizes, layerSizes)
 validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
+# params ****************************
 maxSteps = 2500 ;
 resultPath = "/tmp/ExpDist/" ;
+checkpointPath ="/tmp/checkpoints/"
+# ***********************************
 limit=40000 ;
 n = 0
 index=0 ;
@@ -290,7 +321,7 @@ for t in validCombinations:
     #f.write(generateCommandLine(expID,scriptName, "baseline", t,maxSteps=maxSteps) + "\n")   # initial training
     f.write(generateCommandLine(expID,scriptName, resultPath, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
     f.write(generateCommandLine(expID,scriptName, resultPath, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
-    f.write("rm /home/fdai0114/checkpoints/"+uniqueID+"*\n")
+    f.write("rm "+checkpointPath+uniqueID+"*\n") ;
     #f.write('mv /home/fdai0114/%s*.csv /tmp/ExpDist/\n'%(uniqueID,)) ;
     # zipfilename = expID + "-part-" + str(n) + "_csv.zip"
     # f.write ("zip "+zipfilename+" "+uniqueID+"_D1D1.csv\n") ;

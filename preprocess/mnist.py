@@ -17,19 +17,21 @@ class fakeFlags(object):
     self.permuteTest2 = -1;
     self.permuteTest3 = -1;
 
-def SplitPackage(train_classes, train2_classes, test_classes, test2_classes, test3_classes):
+def SplitPackage(train_classes, train2_classes, test_classes, test2_classes, test3_classes,
+                 permuteTrain=-1, permuteTest=-1, permuteTrain2=-1, permuteTest2=-1, permuteTest3=-1):
 # alternate data generation
     tmpObj = fakeFlags() ;
     tmpObj.train_classes = train_classes ;
     tmpObj.test_classes =  test_classes;
     tmpObj.test2_classes = test2_classes ;
     tmpObj.test3_classes =  test3_classes;
-    tmpObj.permuteTrain = -1;
-    tmpObj.permuteTest = -1;
-    tmpObj.permuteTest2 = -1;
-    tmpObj.permuteTest3 = -1;
+    tmpObj.permuteTrain = int(permuteTrain);
+    tmpObj.permuteTest = int(permuteTest);
+    tmpObj.permuteTest2 = int(permuteTest2);
+    tmpObj.permuteTest3 = int(permuteTest3);
     tr,tst,tst2,tst3 = initDataSetsClasses(tmpObj)
     tmpObj.train_classes = train2_classes ;
+    tmpObj.permuteTrain = permuteTrain2 ;
     tr2,tst,tst2,tst3 = initDataSetsClasses(tmpObj)
     x = [tr.images,tr2.images] ;
     y = [tr.labels, tr2.labels] ;
