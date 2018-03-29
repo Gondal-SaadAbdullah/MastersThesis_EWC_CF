@@ -12,7 +12,7 @@ def initDataSetsClasses(FLAGS):
     global dataSetTest2
     global dataSetTest3
     """
-    print(FLAGS.train_classes, FLAGS.test_classes)
+    print("FLAGS",FLAGS.train_classes, FLAGS.test_classes)
     # Variable to read out the labels & data of the DataSet Object.
     mnistData = read_data_sets('./',
                                one_hot=True)

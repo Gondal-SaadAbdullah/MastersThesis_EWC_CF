@@ -184,6 +184,7 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
             execStr = execStr + " --permuteTrain2 1 --permuteTest2 1 "
         execStr = execStr + " " + train_lr+" "+retrain_lr + " " + train_classes + " " + test_classes + " "+train2_classes+" "+ \
                   test2_classes+" "+test3_classes+" "+ " --plot_file "+plotFile ;
+                  
         return execStr ;
 
     execStr = execStr + "--max_steps "+str(maxSteps)+" " ;

@@ -33,7 +33,7 @@ flags.DEFINE_string("train_classes", '0 1 2 3 4', "trainclasses")
 flags.DEFINE_string("train2_classes", '5 6 7 8 9', "train2classes")
 flags.DEFINE_string("test_classes", '0 1 2 3 4', "testclasses")
 flags.DEFINE_string("test2_classes", '5 6 7 8 9', "test2classes")
-flags.DEFINE_string("test3_classes", '0 1 2 3 4 5 6 7 8 9', "test3classes")
+flags.DEFINE_string("test3_classes", '', "test3classes")
 flags.DEFINE_integer("hidden1", 200, "neurons in hl1")
 flags.DEFINE_integer("hidden2", 200, "neurons in hl2")
 flags.DEFINE_integer("hidden3", 0, "neurons in hl3")
@@ -84,7 +84,10 @@ if len(FLAGS.plot_file) > 0:
 
 
 def convert2List (s):
-  return [int (x) for x in s.split()] ;
+  if s == '':
+    return None;
+  else:
+    return [int (x) for x in s.split(",")] ;
 
 # data preprocessing
 # x: train data, y: train labels
@@ -111,8 +114,41 @@ start = time.time()
 
 with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))) as sess:
     mlp = imm.TransferNN(no_of_node, (optimizer, learning_rate), keep_prob_info=keep_prob_info)
+    mlpbl = imm.TransferNN(no_of_node, (optimizer, learning_rate), keep_prob_info=keep_prob_info)
+
 
     sess.run(tf.global_variables_initializer())
+    rowSize=x[0].shape[1] ;
+    nrLabels = y[0].shape[1] ;
+    nrOfRows = 0;
+    nrOfRows_ = 0;
+    for __x in x:
+      nrOfRows+= __x.shape[0] ;
+    for __x in x_:
+      nrOfRows_+= __x.shape[0] ;
+      
+    xbl = np.zeros([nrOfRows,rowSize]) ;
+    ybl = np.zeros([nrOfRows,nrLabels]) ;
+    xbl_=np.zeros([nrOfRows_,rowSize]) ;
+    ybl_=np.zeros([nrOfRows_,nrLabels]) ;
+    xbl[0:x[0].shape[0],:] = x[0] ;
+    xbl[x[0].shape[0]:, :] = x[1] ;
+    ybl[0:x[0].shape[0],:] = y[0] ;
+    ybl[x[0].shape[0]:, :] = y[1] ;
+    xbl_[0:x_[0].shape[0],:] = x_[0] ;
+    xbl_[x_[0].shape[0]:, :] = x_[1] ;
+    ybl_[0:x_[0].shape[0],:] = y_[0] ;
+    ybl_[x_[0].shape[0]:, :] = y_[1] ;
+    
+    print ("Baseline", xbl.shape, x[0].shape, x_[0].shape)
+    # construct train and test set from all tasks   
+    if plotfile is not None:
+      plotfile.write ("Baseline\n") ;
+    mlpbl.Train(sess, xbl, ybl, xbl_, ybl_, epoch, mb=batch_size, logTo=plotfile)
+    mlpbl.Test(sess, [[xbl,ybl," train"], [xbl_,ybl_," test"]], logTo=plotfile)
+
+    #sess.run(tf.global_variables_initializer())
+    
 
     L_copy = []
     FM = []
