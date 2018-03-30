@@ -185,7 +185,7 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
         execStr = execStr + " " + train_lr+" "+retrain_lr + " " + train_classes + " " + test_classes + " "+train2_classes+" "+ \
                   test2_classes+" "+test3_classes+" "+ " --plot_file "+plotFile ;
                   
-        return execStr + " --batch_size 100";
+        return execStr + " --batch_size 100 --epoch 20";
 
     execStr = execStr + "--max_steps "+str(maxSteps)+" " ;
 
