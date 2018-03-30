@@ -168,13 +168,13 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
       if action == "D2DAll":
         return "# all is done in D1D1 step" ;
       else:
-        train_classes = " --train_classes " + D1 + " ";
-        test_classes = " --test_classes " + D1 + " ";
+        train_classes = " --train_classes " + D1.replace(" ",",") + " ";
+        test_classes = " --test_classes " + D1.replace(" ",",") + " ";
         train_lr = " --learning_rate " + str(params[1])
         if params[0]  in ["DP10-10","DP5-5"]:
             execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
-        train2_classes = " --train2_classes " + D2 + " ";
-        test2_classes = " --test2_classes " + D2 + " ";
+        train2_classes = " --train2_classes " + D2.replace(" ",",") + " ";
+        test2_classes = " --test2_classes " + D2.replace(" ",",") + " ";
         test3_classes = "" ;
         supp = "_"+action ;
         plotFile =  resultPath + model_name+".csv"
@@ -185,7 +185,7 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
         execStr = execStr + " " + train_lr+" "+retrain_lr + " " + train_classes + " " + test_classes + " "+train2_classes+" "+ \
                   test2_classes+" "+test3_classes+" "+ " --plot_file "+plotFile ;
                   
-        return execStr ;
+        return execStr + " --batch_size 100";
 
     execStr = execStr + "--max_steps "+str(maxSteps)+" " ;
 

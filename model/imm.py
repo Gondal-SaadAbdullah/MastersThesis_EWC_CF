@@ -108,6 +108,7 @@ class TransferNN(object):
         return FM
 
     def Train(self, sess, x, y, x_, y_, epoch, mb=50,logTo=None):
+        print "EPOCH", epoch 
 		# how many samples in train set
         data_size = x.shape[0]
         
