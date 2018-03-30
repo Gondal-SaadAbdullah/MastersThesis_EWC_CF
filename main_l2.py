@@ -118,8 +118,42 @@ with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=Tru
 
     mlp = imm.TransferNN(no_of_node, (optimizer, learning_rate), keep_prob_info=keep_prob_info)
     mlp.RegPatch(lmbda)
+    mlpbl = imm.TransferNN(no_of_node, (optimizer, learning_rate), keep_prob_info=keep_prob_info)
+
 
     sess.run(tf.global_variables_initializer())
+    rowSize=x[0].shape[1] ;
+    nrLabels = y[0].shape[1] ;
+    nrOfRows = 0;
+    nrOfRows_ = 0;
+    for __x in x:
+      nrOfRows+= __x.shape[0] ;
+    for __x in x_:
+      nrOfRows_+= __x.shape[0] ;
+
+    xbl = np.zeros([nrOfRows,rowSize]) ;
+    ybl = np.zeros([nrOfRows,nrLabels]) ;
+    xbl_=np.zeros([nrOfRows_,rowSize]) ;
+    ybl_=np.zeros([nrOfRows_,nrLabels]) ;
+    xbl[0:x[0].shape[0],:] = x[0] ;
+    xbl[x[0].shape[0]:, :] = x[1] ;
+    ybl[0:x[0].shape[0],:] = y[0] ;
+    ybl[x[0].shape[0]:, :] = y[1] ;
+    xbl_[0:x_[0].shape[0],:] = x_[0] ;
+    xbl_[x_[0].shape[0]:, :] = x_[1] ;
+    ybl_[0:x_[0].shape[0],:] = y_[0] ;
+    ybl_[x_[0].shape[0]:, :] = y_[1] ;
+
+    print ("Baseline", xbl.shape, x[0].shape, x_[0].shape)
+    # construct train and test set from all tasks
+    if plotfile is not None:
+      plotfile.write ("Baseline\n") ;
+    mlpbl.Train(sess, xbl, ybl, xbl_, ybl_, epoch, mb=batch_size, logTo=plotfile)
+    mlpbl.Test(sess, [[xbl,ybl," train"], [xbl_,ybl_," test"]], logTo=plotfile)
+
+
+
+    #sess.run(tf.global_variables_initializer())
     L_copy = []
     FM = []
     for i in range(no_of_task):
