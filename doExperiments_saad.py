@@ -9,14 +9,55 @@
 #
 import os, sys, itertools
 
+cmdTemplates = {
+"wtIMM": {
+  "baseline":"python main.py --hidden1 100 \
+  --hidden2 100  --db mnist.pkl.gz --train_classes {D1},{D2} --test_classes {D1},{D2} \
+  --add_permuted_D1 {addPermutation} --learning_rate {learning_rate} --train2_classes 0\
+  --test2_classes 0 --test3_classes 0 --tasks 1 --batch_size 100 --optimizer SGD \
+  --max_steps {maxSteps} --mean_imm False --mode_imm False --plot_file {resultPath}/{model_name}_baseline.csv",
+ "D1D1": "",
+ "D2DAll":"python main.py --hidden1 100 --hidden2 100  --db mnist.pkl.gz\
+ --train_classes {D1} --test_classes {D1} --learning_rate {learning_rate}\
+ --train2_classes {D2} --test2_classes {D2} \
+ --test3_classes {D1},{D2} --batch_size 100 --optimizer SGD \
+ --max_steps {maxSteps} --mean_imm True --mode_imm True",
+ "move":"mv {resultPath}/{model_name}*.csv /tmp/ExpDist/"
+},
+"l2IMM":{},
+ "fc": {"baseline": "python ./dropout_more_layers.py  \
+ --hidden1 {hidden1} --hidden2 {hidden2} --learning_rate {learning_rate} \
+ --train_classes {D1} {D2} --training_readout_layer 1  \
+ --test_classes {D1} {D2} --testing_readout_layer 1 \
+ --plot_file {resultPath}/{model_name}_baseline.csv \
+ --start_at_step 0 --dropout_hidden 1 --dropout_input 1 --max_steps {max_steps}",
+ "D1D1": "python ./dropout_more_layers.py  --hidden1 {hidden1} \
+ --hidden2 {hidden2} --learning_rate {learning_rate} \
+ --train_classes {D1} --training_readout_layer 1  \
+ --test_classes {D1} --testing_readout_layer 1 \
+ --save_model {resultPath}/{model_name}_D1D1 --plot_file {resultPath}/{model_name}_D1D1.csv \
+ --start_at_step 0 --dropout_hidden 1 --dropout_input 1 --max_steps {max_steps}",
+ "D2DAll": "python ./dropout_more_layers.py  --hidden1 {hidden1} \
+ --hidden2 {hidden2} --learning_rate {learning_rate} --train_classes {D2} \
+ --training_readout_layer 1  --test_classes {D2} \
+ --testing_readout_layer 1  --test2_classes {D1} \
+ --testing2_readout_layer 1 --test3_classes {D1} {D2}  \
+ --testing3_readout_layer 1  --load_model {model_name}_D1D1 \
+ --start_at_step {start_at_step}  --plot_file  {resultPath}/{model_name}_D2D1.csv \
+ --plot_file2 {resultPath}/{model_name}_D2D2.csv  \
+ --plot_file3 {resultPath}/{model_name}_D2DAll.csv \
+ --dropout_hidden {dropout_hidden} --dropout_input {dropout_input} --max_steps {max_steps}",
+ "move": "mv /home/fdai0114/{expID}*.csv /tmp/ExpDist/"}
+ }
+
 
 def getScriptName(expID):
     if expID in ["fc", "D-fc", "fc-MRL", "D-fc-MRL"]:
-        return "python ./Dropout_Experiments/dropout_more_layers.py "
+        return "python ./dropout_more_layers.py "
     elif expID in ["conv", "D-conv", "conv-MRL", "D-conv-MRL"]:
-        return "python ./Dropout_Experiments/dropout_more_layers.py --dnn_model cnn "
+        return "python ./dropout_more_layers.py --dnn_model cnn "
     elif expID in ["LWTA-fc", "LWTA-fc-MRL"]:
-        return "python ./Dropout_Experiments/dropout_more_layers.py --dnn_model lwta "
+        return "python ./dropout_more_layers.py --dnn_model lwta "
     elif expID == "EWC" or expID=="D-EWC":
         return "python ./ewc_with_options.py"
     elif expID == "wtIMM":
@@ -124,6 +165,53 @@ def generateUniqueId(expID,params):
   return expID + "_" + params[0] + "_lr_" + str(params[1]) + "_retrainlr_"+str(params[2])+"_layers_"+str(h1)+"%"+str(h2)+"%"+str(h3) ;
 
 
+def generateNewCommandLine(expID,scriptName, resultPath, action, params,maxSteps=2000):
+
+    # create layer conf parameters
+    if len(params) == 5:
+        nrHiddenLayers = 2
+    else:
+        nrHiddenLayers = 3
+    hidden_layers = ""
+
+    D1, D2, D3 = generateTaskString(params[0])
+
+    model_name = generateUniqueId(expID,params)
+    #print(model_name)
+
+
+    lrate = str(params[1]) ;
+    lrate2 = str(params[2]) ;
+    hidden1 = str(params[3]) ;
+    hidden2 = str(params[4]) ;
+
+    if nrHiddenLayers==3:
+      hidden3 = str(params[5]) ;
+    else:
+      hidden3 = "0"
+
+    execStr = cmdTemplates[expID][action] ;
+
+    if expID in ["wtIMM", "l2tIMM"]:
+      D1imm = D1.replace(" ",",") ;
+      D2imm = D2.replace(" ",",")
+      if params[0]  in ["DP10-10","DP5-5"]:
+        execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
+      execStr = execStr.format(expID = expID, D1=D1imm, D2 = D2imm,
+            learning_rate = lrate,hidden1=hidden1, hidden2 = hidden2, hidden3 = hidden3,
+            model_name = model_name, resultPath=resultPath,
+            addPermutation=False, plotFile=resultPath + model_name + "_"+action+".csv", max_steps=maxSteps)
+
+
+      return execStr ;
+    elif expID == "fc":
+      execStr = execStr.format(expID = expID,D1=D1,D2=D2,
+            learning_rate = lrate,hidden1=hidden1, hidden2 = hidden2, hidden3 = hidden3,
+            addPermutation=False, model_name=model_name, resultPath=resultPath, max_steps=maxSteps,
+            start_at_step=maxSteps, dropout_hidden=1, dropout_input=1)
+
+    return execStr ;
+
 
 # not complete!!!
 def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=2000):
@@ -135,10 +223,12 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
         nrHiddenLayers = 3
     hidden_layers = ""
 
+    D1, D2, D3 = generateTaskString(params[0])
+
+
     for i in range(0, nrHiddenLayers):
         hidden_layers += "--hidden" + str(i + 1) + " " + str(params[3 + i]) + " "
 
-    D1, D2, D3 = generateTaskString(params[0])
 
     mlrExperiment = False;
     if expID.find("MRL") != -1:
@@ -164,37 +254,34 @@ def generateCommandLine(expID,scriptName, resultPath, action, params,maxSteps=20
     # execString that is command to all experiments..
     execStr = scriptName + " " + hidden_layers + " ";
 
+    lrate = str(params[1]) ;
+    lrate2 = str(params[2]) ;
+    hidden1 = str(params[3]) ;
+    hidden2 = str(params[4]) ;
+
+    if nrHiddenLayers==3:
+      hidden3 = str(params[5]) ;
+    else:
+      hidden3 = "0"
+
     if expID in ["wtIMM", "l2tIMM"]:
-      if action == "D2DAll":
-        return "# all is done in D1D1 step" ;
-      else:
-        train_classes = " --train_classes " + D1.replace(" ",",") + " ";
-        test_classes = " --test_classes " + D1.replace(" ",",") + " ";
-        train_lr = " --learning_rate " + str(params[1])
-        if params[0]  in ["DP10-10","DP5-5"]:
-            execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
-        train2_classes = " --train2_classes " + D2.replace(" ",",") + " ";
-        test2_classes = " --test2_classes " + D2.replace(" ",",") + " ";
-        test3_classes = "" ;
-        supp = "_"+action ;
-        plotFile =  resultPath + model_name+".csv"
+      execStr = cmdTemplates[expID][action] ;
+      D1imm = D1.replace(" ",",") ;
+      D2imm = D2.replace(" ",",")
+      if params[0]  in ["DP10-10","DP5-5"]:
+        execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
+      execStr = execStr.format(expID = expID, train_classes=D1imm+","+D2imm, train2_classes=0,
+            test_classes=(D1imm+","+D2imm), test2_classes="0", test3_classes="0",
+            learning_rate = lrate,hidden1=hidden1, hidden2 = hidden2, hidden3 = hidden3,
+            addPermutation=False, plotFile=resultPath + model_name + "_"+action+".csv", maxSteps=maxSteps)
 
-        retrain_lr = " --learning_rate2 " + str(params[2])
-        if params[0]  in ["DP10-10","DP5-5"]:
-            execStr = execStr + " --permuteTrain2 1 --permuteTest2 1 "
-        execStr = execStr + " " + train_lr+" "+retrain_lr + " " + train_classes + " " + test_classes + " "+train2_classes+" "+ \
-                  test2_classes+" "+test3_classes+" "+ " --plot_file "+plotFile ;
-                  
-        return execStr + " --batch_size 100 --epoch 40";
 
-    execStr = execStr + "--max_steps "+str(maxSteps)+" " ;
+      return execStr ;
 
     if action == "D1D1":
         train_classes = " --train_classes " + D1 + trainingReadoutStr
         test_classes = " --test_classes " + D1 + testingReadoutStr
         train_lr = " --learning_rate " + str(params[1])
-        if params[0]  in ["DP10-10","DP5-5"]:
-            execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
         execStr = execStr + " " + train_lr + " " + train_classes + " " + test_classes + \
                   " --save_model " + model_name + "_D1D1 --plot_file " + resultPath + model_name + "_D1D1.csv" + " --start_at_step 0"
     elif action=="D2DAll":
@@ -300,8 +387,9 @@ validCombinations = [correctParams(t) for t in combinations if validParams(t)]
 #print len(validCombinations) ;
 
 # params ****************************
-maxSteps = 2500 ;
+maxSteps = 4500 ;
 resultPath = "/home/fdai0114/" ;
+resultPath = "./" ;
 checkpointPath ="/tmp/checkpoints/"
 # ***********************************
 limit=40000 ;
@@ -319,9 +407,10 @@ for t in validCombinations:
     alreadyDone[uniqueID]=True;
     f = files[n] ;
     f.write('--- START ---\n')
-    #f.write(generateCommandLine(expID,scriptName, "baseline", t,maxSteps=maxSteps) + "\n")   # initial training
-    f.write(generateCommandLine(expID,scriptName, resultPath, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
-    f.write(generateCommandLine(expID,scriptName, resultPath, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
+    f.write(generateNewCommandLine(expID,scriptName, resultPath, "baseline", t,maxSteps=maxSteps) + "\n")   # initial training
+    f.write(generateNewCommandLine(expID,scriptName, resultPath, "D1D1", t,maxSteps=maxSteps) + "\n")   # initial training
+    f.write(generateNewCommandLine(expID,scriptName, resultPath, "D2DAll", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
+    f.write(generateNewCommandLine(expID,scriptName, resultPath, "move", t,maxSteps=maxSteps) + "\n")  # retraining and eval on D1
     #f.write("rm "+checkpointPath+uniqueID+"*\n") ;
     f.write('mv /home/fdai0114/%s*.csv /tmp/ExpDist/\n'%(uniqueID,)) ;
     # zipfilename = expID + "-part-" + str(n) + "_csv.zip"

@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from utilities import * 
+from utilities import *
 
 # implements LWTA catastrophic forgetting experiments of Srivastava et al. in Sec. 6
 
@@ -22,7 +22,7 @@ from numpy import size
 from tensorflow.python.framework import dtypes
 
 from tensorflow.contrib.learn.python.learn.datasets.mnist import read_data_sets
-from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet 
+from tensorflow.contrib.learn.python.learn.datasets.mnist import DataSet
 from tensorflow.contrib.learn.python.learn.datasets.mnist import dense_to_one_hot
 
 # from hgext.histedit import action
@@ -302,13 +302,13 @@ def train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3):
 
       # reshape tensor from the pooling layer into a batch of vectors
       h_pool2_flattened = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
- 
+
       # Create a densely Connected Layer
       # image size reduced to 7x7, add a fully-connected layer with 1024 neurons
       # to allow processing on the entire image.
       h_fc1 = fc_layer_cnn(h_pool2_flattened, 7 * 7 * 64, 1024, 'h_fc1')
 
-      # Apply dropout to the densely connected layer      
+      # Apply dropout to the densely connected layer
       h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob_input)
 
       # Create a softmax linear classification layer for the outputs
@@ -317,8 +317,8 @@ def train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3):
       logits_tr3 = ro_layer_cnn(h_fc1_drop, 1024, 10, 'ro_layer_tr3')
       logits_tr4 = ro_layer_cnn(h_fc1_drop, 1024, 10, 'ro_layer_tr4')
       logitsAll = logits_tr1 + logits_tr2 + logits_tr3 + logits_tr4 ;
-      
-    elif FLAGS.dnn_model=="lwta":    
+
+    elif FLAGS.dnn_model=="lwta":
       # Create the first hidden layer
       h_fc1 = lwta_layer(x, IMAGE_PIXELS, FLAGS.hidden1, FLAGS.lwtaBlockSize,
                        1.0 / math.sqrt(float(IMAGE_PIXELS)), 'h_lwta1')
@@ -498,16 +498,16 @@ def train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3):
         for i in range(FLAGS.start_at_step, FLAGS.max_steps + FLAGS.start_at_step):
             if i % LOG_FREQUENCY == 0:  # record summaries & test-set accuracy every 5 steps
                 if testing_readout_layer is 1:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict(False, i))
+                    _lr,  acc = sess.run([lr, accuracy_tr1], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is 2:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict(False, i))
+                    _lr,  acc = sess.run([lr,  accuracy_tr2], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is 3:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict(False, i))
+                    _lr,  acc = sess.run([lr, accuracy_tr3], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is 4:
-                    _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict(False, i))
+                    _lr,  acc = sess.run([lr,  accuracy_tr4], feed_dict=feed_dict(False, i))
                 elif testing_readout_layer is -1:
-                    _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
-                        [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
+                    _lr,  acc, l1, l2, l3, l4, lAll = sess.run(
+                        [lr, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
                         feed_dict=feed_dict(False, i))
                 #test_writer_ds.add_summary(s, i)
                 print(_lr, 'test set 1 accuracy at step: %s \t \t %s' % (i, acc))
@@ -515,31 +515,31 @@ def train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3):
 
                 if FLAGS.test2_classes != None:
                   if FLAGS.testing2_readout_layer is 1:
-                      _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict2(False, i))
+                      _lr,  acc = sess.run([lr,  accuracy_tr1], feed_dict=feed_dict2(False, i))
                   elif FLAGS.testing2_readout_layer is 2:
-                      _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict2(False, i))
+                      _lr,  acc = sess.run([lr,  accuracy_tr2], feed_dict=feed_dict2(False, i))
                   elif FLAGS.testing2_readout_layer is 3:
-                      _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict2(False, i))
+                      _lr,  acc = sess.run([lr,  accuracy_tr3], feed_dict=feed_dict2(False, i))
                   elif FLAGS.testing2_readout_layer is 4:
-                      _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict2(False, i))
+                      _lr,  acc = sess.run([lr,  accuracy_tr4], feed_dict=feed_dict2(False, i))
                   elif FLAGS.testing2_readout_layer is -1:
-                      _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
-                        [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
+                      _lr,  acc, l1, l2, l3, l4, lAll = sess.run(
+                        [lr,  accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
                         feed_dict=feed_dict2(False, i))
                   print(_lr, 'test set 2 accuracy at step: %s \t \t %s' % (i, acc))
                   writer2.writerow([i, acc])
 
                 if FLAGS.test3_classes != None:
                   if FLAGS.testing3_readout_layer is 1:
-                      _lr, s, acc = sess.run([lr, merged, accuracy_tr1], feed_dict=feed_dict3(False, i))
+                      _lr,  acc = sess.run([lr,  accuracy_tr1], feed_dict=feed_dict3(False, i))
                   elif FLAGS.testing3_readout_layer is 2:
-                      _lr, s, acc = sess.run([lr, merged, accuracy_tr2], feed_dict=feed_dict3(False, i))
+                      _lr,  acc = sess.run([lr,  accuracy_tr2], feed_dict=feed_dict3(False, i))
                   elif FLAGS.testing3_readout_layer is 3:
-                      _lr, s, acc = sess.run([lr, merged, accuracy_tr3], feed_dict=feed_dict3(False, i))
+                      _lr,  acc = sess.run([lr,  accuracy_tr3], feed_dict=feed_dict3(False, i))
                   elif FLAGS.testing3_readout_layer is 4:
-                      _lr, s, acc = sess.run([lr, merged, accuracy_tr4], feed_dict=feed_dict3(False, i))
+                      _lr,  acc = sess.run([lr,  accuracy_tr4], feed_dict=feed_dict3(False, i))
                   elif FLAGS.testing3_readout_layer is -1:
-                      _lr, s, acc, l1, l2, l3, l4, lAll = sess.run(
+                      _lr,  acc, l1, l2, l3, l4, lAll = sess.run(
                         [lr, merged, accuracy_trAll, logits_tr1, logits_tr2, logits_tr3, logits_tr4, logitsAll],
                         feed_dict=feed_dict3(False, i))
                   print(_lr, 'test set 3 accuracy at step: %s \t \t %s' % (i, acc))
@@ -549,13 +549,13 @@ def train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3):
 
             else:  # record train set summaries, and run training steps
                 if training_readout_layer is 1:
-                    s, _ = sess.run([merged, train_step_tr1], feed_dict(True, i))
+                    _ = sess.run([train_step_tr1], feed_dict(True, i))
                 elif training_readout_layer is 2:
-                    s, _ = sess.run([merged, train_step_tr2], feed_dict(True, i))
+                    _ = sess.run([train_step_tr2], feed_dict(True, i))
                 if training_readout_layer is 3:
-                    s, _ = sess.run([merged, train_step_tr3], feed_dict(True, i))
+                    _ = sess.run([train_step_tr3], feed_dict(True, i))
                 if training_readout_layer is 4:
-                    s, _ = sess.run([merged, train_step_tr4], feed_dict(True, i))
+                    _ = sess.run([train_step_tr4], feed_dict(True, i))
                 #train_writer_ds.add_summary(s, i)
         #train_writer_ds.close()
         #test_writer_ds.close()

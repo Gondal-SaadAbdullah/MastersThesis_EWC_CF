@@ -22,18 +22,18 @@ flags.DEFINE_boolean("mode_imm", True, "include Mode-IMM")
 flags.DEFINE_float("alpha", -1, "alpha(K) of Mean & Mode IMM (cf. equation (3)~(8) in the article)")
 
 ## Training Hyperparameter
-flags.DEFINE_float("epoch", -1, "the number of training epoch")
+flags.DEFINE_float("max_steps", -1, "the number of training steps")
 flags.DEFINE_string("optimizer", 'SGD', "the method name of optimization. (SGD|Adam|Momentum)")
 flags.DEFINE_float("learning_rate", -1, "learning rate of optimizer")
 flags.DEFINE_float("learning_rate2", -1, "learning rate of optimizer")
-flags.DEFINE_integer("batch_size", 50, "mini batch size")
+flags.DEFINE_integer("batch_size", 100, "mini batch size")
 flags.DEFINE_integer("tasks", 2, "number of tasks")
 flags.DEFINE_string("db", 'mnist.pkl.gz', "database")
-flags.DEFINE_string("train_classes", '0 1 2 3 4', "trainclasses")
-flags.DEFINE_string("train2_classes", '5 6 7 8 9', "train2classes")
-flags.DEFINE_string("test_classes", '0 1 2 3 4', "testclasses")
-flags.DEFINE_string("test2_classes", '5 6 7 8 9', "test2classes")
-flags.DEFINE_string("test3_classes", '', "test3classes")
+flags.DEFINE_string("train_classes", '0,1,2,3,4', "trainclasses")
+flags.DEFINE_string("train2_classes", '5,6,7,8,9', "train2classes")
+flags.DEFINE_string("test_classes", '0,1,2,3,4', "testclasses")
+flags.DEFINE_string("test2_classes", '5,6,7,8,9', "test2classes")
+flags.DEFINE_string("test3_classes", '0', "test3classes")
 flags.DEFINE_integer("hidden1", 200, "neurons in hl1")
 flags.DEFINE_integer("hidden2", 200, "neurons in hl2")
 flags.DEFINE_integer("hidden3", 0, "neurons in hl3")
@@ -63,7 +63,7 @@ mode_imm = FLAGS.mode_imm
 alpha = FLAGS.alpha
 optimizer = FLAGS.optimizer
 learning_rate = FLAGS.learning_rate
-epoch = int(FLAGS.epoch)
+max_steps = int(FLAGS.max_steps)
 batch_size = FLAGS.batch_size
 
 no_of_task = FLAGS.tasks ;
@@ -107,6 +107,7 @@ x, y, x_, y_, xyc_info = preprocess.SplitPackage(train_classes = convert2List(FL
 
 print ([_x.shape for _x in x], [_y.shape for _y in y])
 print ([_x.shape for _x in x_], [_y.shape for _y in y_])
+print (y[0].sum(axis=0))
 #print (x_.shape, y_.shape)
 
 
@@ -118,6 +119,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=Tru
 
 
     sess.run(tf.global_variables_initializer())
+
     rowSize=x[0].shape[1] ;
     nrLabels = y[0].shape[1] ;
     nrOfRows = 0;
@@ -126,7 +128,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=Tru
       nrOfRows+= __x.shape[0] ;
     for __x in x_:
       nrOfRows_+= __x.shape[0] ;
-      
+
     xbl = np.zeros([nrOfRows,rowSize]) ;
     ybl = np.zeros([nrOfRows,nrLabels]) ;
     xbl_=np.zeros([nrOfRows_,rowSize]) ;
@@ -139,16 +141,19 @@ with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=Tru
     xbl_[x_[0].shape[0]:, :] = x_[1] ;
     ybl_[0:x_[0].shape[0],:] = y_[0] ;
     ybl_[x_[0].shape[0]:, :] = y_[1] ;
-    
+    print ("baseline train labels", nrOfRows, ybl.sum(axis=0))
+    print ("baseline test labels", nrOfRows_, ybl_.sum(axis=0))
+
+    """
     print ("Baseline", xbl.shape, x[0].shape, x_[0].shape)
-    # construct train and test set from all tasks   
+    # construct train and test set from all tasks
     if plotfile is not None:
       plotfile.write ("Baseline\n") ;
-    mlpbl.Train(sess, xbl, ybl, xbl_, ybl_, epoch, mb=batch_size, logTo=plotfile)
+    mlpbl.Train(sess, xbl, ybl, xbl_, ybl_, max_steps, mb=batch_size, logTo=plotfile)
     mlpbl.Test(sess, [[xbl,ybl," train"], [xbl_,ybl_," test"]], logTo=plotfile)
-
+    """
     #sess.run(tf.global_variables_initializer())
-    
+
 
     L_copy = []
     FM = []
@@ -159,7 +164,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=Tru
           plotfile.write("\n")
           plotfile.write("================= Train task #%d (%s) ================" % (i+1, optimizer)+"\n")
 
-        mlp.Train(sess, x[i], y[i], x_[i], y_[i], epoch, mb=batch_size, logTo=plotfile)
+        mlp.Train(sess, x[i], y[i], x_[i], y_[i], max_steps, mb=batch_size, logTo=plotfile)
         mlp.Test(sess, [[x[i],y[i]," train"], [x_[i],y_[i]," test"]], logTo=plotfile)
 
         if mean_imm or mode_imm:

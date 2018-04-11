@@ -40,7 +40,7 @@ class TransferNN(object):
         for l in range(1, len(self.node_info)-1):
             self.Layers.append(DropLinear(h_out_prev, self.node_info[l], self.drop_rate[l]))
             self.Layers_dropbase.append(self.Layers[-1].dropbase)
-            
+
             h_out_prev = tf.nn.relu(self.Layers[-1].h_out)
 
         self.Layers.append(DropLinear(h_out_prev, self.node_info[-1], 1.0))
@@ -54,7 +54,7 @@ class TransferNN(object):
 
     def _CrossEntropyPackage(self, optim):
         self.cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.y_, logits=self.y))
-        self.train_step = self._OptimizerPackage(self.cross_entropy, optim) 
+        self.train_step = self._OptimizerPackage(self.cross_entropy, optim)
         self.correct_prediction = tf.equal(tf.argmax(self.y,1), tf.argmax(self.y_,1))
         self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
 
@@ -72,7 +72,7 @@ class TransferNN(object):
         self.train_step = self._OptimizerPackage(self.cross_entropy, self.optim)
 
     def CalculateFisherMatrix(self, sess, x, y, mb=1000):
-        """new version of Calculating Fisher Matrix    
+        """new version of Calculating Fisher Matrix
 
         Returns:
             FM: consist of [FisherMatrix(layer)] including W and b.
@@ -104,43 +104,43 @@ class TransferNN(object):
         for l in range(len(self.Layers)):
             FM[l]['W'] += 1e-8
             FM[l]['b'] += 1e-8
-        
+
         return FM
 
-    def Train(self, sess, x, y, x_, y_, epoch, mb=50,logTo=None):
-        print "EPOCH", epoch 
-		# how many samples in train set
+    def Train(self, sess, x, y, x_, y_, total_step=4500, mb=50,logTo=None):
+        #print "EPOCH", epoch
+        # how many samples in train set
         data_size = x.shape[0]
-        
-        # how many minibatches
-        total_step = int(math.ceil(float(data_size)/mb))
-        mbcount=0 ;
 
-        for e in range(epoch):
-            train_acc = 0
-            for step in range(total_step):
+
+        mbcount=0 ;
+        train_acc = 0 ;
+
+        #for e in range(steps):
+         #   train_acc = 0
+        for step in range(total_step):
                 ist = (step * mb) % data_size
                 ied = min(ist + mb, data_size)
 
-                _, acc = sess.run([self.train_step, self.accuracy], 
+                _, acc = sess.run([self.train_step, self.accuracy],
                                     feed_dict={ self.x:x[ist:ied],
                                                 self.y_:y[ist:ied],
                                                 self.drop_rate:self.keep_prob_info})
                 train_acc += (ied - ist) * acc
                 if mbcount%50==0:
                   test_acc = self.Test(sess, [[x_,y_,""]], 1000, False)[0]
-                  print ('it', mbcount, 'Accuracy', test_acc );
+                  print ('it', step, 'Accuracy', test_acc );
                   if logTo is not None:
-                    logTo.write ('it ' + str(mbcount) +  ' Accuracy ' + str(test_acc)+"\n" );
+                    logTo.write ('it ' + str(step) +  ' Accuracy ' + str(test_acc)+"\n" );
                 mbcount += 1 ;
-            train_acc /= data_size
+            #train_acc /= data_size
 
-            test_acc = self.Test(sess, [[x_,y_,""]], 1000, False)[0]
-            print("(%d, %d, %d, %.4f, %.4f)" % (e+1, (e+1)*total_step,
-                (e+1)*data_size, train_acc, test_acc))
-            if logTo is not None:
-              logTo.write("(%d, %d, %d, %.4f, %.4f)" % (e+1, (e+1)*total_step,
-                (e+1)*data_size, train_acc, test_acc)+"\n")
+
+        test_acc = self.Test(sess, [[x_,y_,""]], 1000, False)[0]
+        print("(%.4f, %.4f)" % (train_acc, test_acc))
+        if logTo is not None:
+          logTo.write("(%.4f, %.4f)" % (train_acc, test_acc)+"\n")
+
 
     def Test(self, sess, xyc_info, mb=1000, debug=True,logTo=None): #ti: triple_info
         acc_ret = []
@@ -151,11 +151,11 @@ class TransferNN(object):
             acc = self._Test(sess, x_, y_, mb)
             acc_ret.append(acc)
 
-            if debug: 
+            if debug:
               print("%s accuracy : %.4f" % (comment, acc))
               if logTo is not None:
                   logTo.write("%s accuracy : %.4f" % (comment, acc)+"\n")
-  
+
         return acc_ret
 
     def _Test(self, sess, x_, y_, mb):
@@ -164,9 +164,9 @@ class TransferNN(object):
         for step in range(int(math.ceil(float(data_size)/mb))):
             ist = (step * mb) % data_size
             ied = min(ist + mb, data_size)
-            acc += (ied - ist) * sess.run(self.accuracy, 
-                                feed_dict={ self.x:x_[ist:ied], 
-                                            self.y_:y_[ist:ied], 
+            acc += (ied - ist) * sess.run(self.accuracy,
+                                feed_dict={ self.x:x_[ist:ied],
+                                            self.y_:y_[ist:ied],
                                             self.drop_rate:self.eval_keep_prob_info})
         acc /= data_size
         return acc
@@ -191,7 +191,7 @@ class TransferNN(object):
             xyc_info.append([x[i], y[i], 'train-idx%d' % i])
         for i in range(len(x_)):
             xyc_info.append([x_[i], y_[i], 'test-idx%d' % i])
-     
+
         return self.Test(sess, xyc_info, mb=mb, debug=debug)
 
     def TestAllTasks(self, sess, x_tasks, y_tasks, mb=1000, debug=True,logTo=None): #ti: triple_info
@@ -202,9 +202,9 @@ class TransferNN(object):
             acc = self._Test(sess, x_, y_, mb)
             acc_ret.append(acc)
         print(acc_ret)
-        if logTo is not None:        
+        if logTo is not None:
           logTo.write(str(acc_ret)+"\n") ;
-        if debug: 
+        if debug:
             print("%s all test accuracy : %.4f" % (self.name, np.average(acc_ret)))
             if logTo is not None:
               logTo.write("%s all test accuracy : %.4f" % (self.name, np.average(acc_ret))+"\n")
