@@ -42,7 +42,10 @@ def initDataSetsClasses(FLAGS):
         np.random.seed(FLAGS.permuteTrain)
         permTr = np.random.permutation(mnistDataTrain.shape[1])
         mnistDataTrainPerm = mnistDataTrain[:, permTr]
-        mnistDataTrain = mnistDataTrainPerm;
+        if FLAGS.mergeTrainWithPermutation == True:
+          mnistDataTrain = np.concatenate((mnistDataTrain,mnistDataTrainPerm),axis=0) ;
+        else:
+          mnistDataTrain = mnistDataTrainPerm;
         # dataSetTrain = DataSet(255. * dataSetTrainPerm,
         #                       mnistLabelsTrain, reshape=False)
     if FLAGS.permuteTest != -1:
@@ -69,7 +72,7 @@ def initDataSetsClasses(FLAGS):
         mnistDataTestPerm = mnistDataTest[:, permTs]
         mnistDataTest3 = mnistDataTestPerm;
 
-
+    print "SHAPE", mnistDataTrain.shape
     if True:
         # args = parser.parse_args()
         if FLAGS.train_classes[0:]:
@@ -102,14 +105,21 @@ def initDataSetsClasses(FLAGS):
                                                                     if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.uint8)
         labels_test2_classes = np.array([mnistLabelsTest[i].argmax() for i in range(0,mnistLabelsTest.shape[0])
                                                                     if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.uint8)
-        labels_test3_classes = np.array([mnistLabelsTest[i].argmax() for i in range(0,mnistLabelsTest.shape[0])
+        if FLAGS.mergeTest12 == False:
+          labels_test3_classes = np.array([mnistLabelsTest[i].argmax() for i in range(0,mnistLabelsTest.shape[0])
                                                                     if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.uint8)
         data_test_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0])
                                                           if mnistLabelsTest[i].argmax() in labels_to_test], dtype=np.float32) ;
         data_test2_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0])
                                                           if mnistLabelsTest[i].argmax() in labels_to_test2], dtype=np.float32) ;
-        data_test3_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0])
+        if FLAGS.mergeTest12 == False:
+          data_test3_classes = np.array([mnistDataTest[i, :] for i in range(0,mnistDataTest.shape[0])
                                                           if mnistLabelsTest[i].argmax() in labels_to_test3], dtype=np.float32) ;
+
+        if FLAGS.mergeTest12 == True:
+          data_test3_classes = np.concatenate((data_test_classes, data_test2_classes),axis=0) ;
+          labels_test3_classes = np.concatenate((labels_test_classes, labels_test2_classes),axis=0) ;
+          print "CONCATMERGE",data_test_classes.shape, data_test2_classes.shape, data_test3_classes.shape
 
 
         labelsTrainOnehot = dense_to_one_hot(labels_train_classes, 10)
@@ -198,6 +208,12 @@ def createParser():
                         help='which dn type is used?')
     parser.add_argument('--lwtaBlockSize', type=int, default=2,
                         help='Number of lwta blocks in all hidden layers')
+
+    parser.add_argument('--mergeTest12', type=eval, default=False,
+                        help='merge sets test and test2 to form test3?')
+
+    parser.add_argument('--mergeTrainWithPermutation', type=eval, default=False,
+                        help='merge train  set and permuted train set?')
 
     parser.add_argument('--data_dir', type=str,
                         default='./',

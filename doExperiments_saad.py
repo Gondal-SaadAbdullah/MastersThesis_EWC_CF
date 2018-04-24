@@ -9,6 +9,10 @@
 #
 import os, sys, itertools
 
+# conv, D-conv, (conv-MRL, D-conv-MRL)
+# fc, D-fc, LWTA-fc, (all MRL)
+# wtIMM, l2IMM
+
 cmdTemplates = {
 "wtIMM": {
   "baseline":"python main.py --hidden1 100 \
@@ -20,23 +24,56 @@ cmdTemplates = {
  "D2DAll":"python main.py --hidden1 100 --hidden2 100  --db mnist.pkl.gz\
  --train_classes {D1} --test_classes {D1} --learning_rate {learning_rate}\
  --train2_classes {D2} --test2_classes {D2} \
+--mergeTest12 True \
  --test3_classes {D1},{D2} --batch_size 100 --optimizer SGD \
  --max_steps {maxSteps} --mean_imm True --mode_imm True",
  "move":"mv {resultPath}/{model_name}*.csv /tmp/ExpDist/"
 },
+
 "l2IMM":{},
+
  "fc": {"baseline": "python ./dropout_more_layers.py  \
  --hidden1 {hidden1} --hidden2 {hidden2} --learning_rate {learning_rate} \
  --train_classes {D1} {D2} --training_readout_layer 1  \
  --test_classes {D1} {D2} --testing_readout_layer 1 \
  --plot_file {resultPath}/{model_name}_baseline.csv \
- --start_at_step 0 --dropout_hidden 1 --dropout_input 1 --max_steps {max_steps}",
+ --start_at_step 0 --dropout_hidden {dropout_hidden} --dropout_input {dropout_input} \
+ --max_steps {max_steps} --permuteTrain {permuteTrain} --permuteTest {permuteTest}",
  "D1D1": "python ./dropout_more_layers.py  --hidden1 {hidden1} \
  --hidden2 {hidden2} --learning_rate {learning_rate} \
  --train_classes {D1} --training_readout_layer 1  \
  --test_classes {D1} --testing_readout_layer 1 \
+ --dropout_hidden {dropout_hidden} --dropout_input {dropout_input} \
  --save_model {resultPath}/{model_name}_D1D1 --plot_file {resultPath}/{model_name}_D1D1.csv \
- --start_at_step 0 --dropout_hidden 1 --dropout_input 1 --max_steps {max_steps}",
+ --start_at_step 0 --max_steps {max_steps} --permuteTrain {permuteTrain} --permuteTest {permuteTest}",
+ "D2DAll": "python ./dropout_more_layers.py  --hidden1 {hidden1} \
+ --hidden2 {hidden2} --learning_rate {learning_rate} --train_classes {D2} \
+ --training_readout_layer {training_readout_layer}  --test_classes {D2} \
+ --testing_readout_layer {testing_readout_layer}  --test2_classes {D1} \
+ --testing2_readout_layer {testing2_readout_layer} --test3_classes {D1} {D2}  \
+ --testing3_readout_layer {testing3_readout_layer}  --load_model {model_name}_D1D1 \
+ --start_at_step {start_at_step}  --plot_file  {resultPath}/{model_name}_D2D1.csv \
+ --plot_file2 {resultPath}/{model_name}_D2D2.csv  \
+ --plot_file3 {resultPath}/{model_name}_D2DAll.csv \
+ --mergeTest12 True \
+ --permuteTrain {permuteTrain} --permuteTest {permuteTest} --permuteTest2 {permuteTest2} --permuteTest3 {permuteTest3} \
+ --dropout_hidden {dropout_hidden} --dropout_input {dropout_input} --max_steps {max_steps}",
+ "move": "mv /home/fdai0114/{expID}*.csv /tmp/ExpDist/"},
+
+ "LWTA-fc": {"baseline": "python ./dropout_more_layers.py  \
+ --hidden1 {hidden1} --hidden2 {hidden2} --learning_rate {learning_rate} \
+ --train_classes {D1} {D2} --training_readout_layer 1  \
+ --test_classes {D1} {D2} --testing_readout_layer 1 \
+ --plot_file {resultPath}/{model_name}_baseline.csv --dnn_model lwta \
+ --start_at_step 0 --dropout_hidden 1 --dropout_input 1 --max_steps {max_steps} \
+ --permuteTrain {permuteTrain} --permuteTest {permuteTest}",
+ "D1D1": "python ./dropout_more_layers.py  --hidden1 {hidden1} \
+ --hidden2 {hidden2} --learning_rate {learning_rate} \
+ --train_classes {D1} --training_readout_layer 1  \
+ --test_classes {D1} --testing_readout_layer 1 --dnn_model lwta\
+ --save_model {resultPath}/{model_name}_D1D1 --plot_file {resultPath}/{model_name}_D1D1.csv \
+ --start_at_step 0 --dropout_hidden 1 --dropout_input 1 --max_steps {max_steps} \
+ --permuteTrain {permuteTrain} --permuteTest {permuteTest}",
  "D2DAll": "python ./dropout_more_layers.py  --hidden1 {hidden1} \
  --hidden2 {hidden2} --learning_rate {learning_rate} --train_classes {D2} \
  --training_readout_layer 1  --test_classes {D2} \
@@ -45,10 +82,64 @@ cmdTemplates = {
  --testing3_readout_layer 1  --load_model {model_name}_D1D1 \
  --start_at_step {start_at_step}  --plot_file  {resultPath}/{model_name}_D2D1.csv \
  --plot_file2 {resultPath}/{model_name}_D2D2.csv  \
- --plot_file3 {resultPath}/{model_name}_D2DAll.csv \
+ --mergeTest12 True \
+ --plot_file3 {resultPath}/{model_name}_D2DAll.csv --dnn_model lwta \
+ --dropout_hidden 1 --dropout_input 1 --max_steps {max_steps} \
+ --permuteTrain {permuteTrain} --permuteTest {permuteTest} --permuteTest2 {permuteTest2} --permuteTest3 {permuteTest3}",
+ "move": "mv /home/fdai0114/{expID}*.csv /tmp/ExpDist/"},
+
+ "conv": {"baseline": "python ./dropout_more_layers.py  \
+ --hidden1 {hidden1} --hidden2 {hidden2} --learning_rate {learning_rate} \
+ --train_classes {D1} {D2} --training_readout_layer {training_readout_layer}  \
+ --test_classes {D1} {D2} --testing_readout_layer {testing_readout_layer} \
+ --plot_file {resultPath}/{model_name}_baseline.csv --dnn_model cnn \
+ --dropout_hidden {dropout_hidden} --dropout_input {dropout_input} \
+ --start_at_step 0 --max_steps {max_steps} \
+ --permuteTrain {permuteTrain} --permuteTest {permuteTest}",
+ "D1D1": "python ./dropout_more_layers.py  --hidden1 {hidden1} \
+ --hidden2 {hidden2} --learning_rate {learning_rate} \
+ --train_classes {D1} --training_readout_layer {training_readout_layer}  \
+ --test_classes {D1} --testing_readout_layer {testing_readout_layer} --dnn_model cnn \
+ --save_model {resultPath}/{model_name}_D1D1 --plot_file {resultPath}/{model_name}_D1D1.csv \
+ --dropout_hidden {dropout_hidden} --dropout_input {dropout_input} \
+ --permuteTrain {permuteTrain} --permuteTest {permuteTest} \
+ --start_at_step 0 --max_steps {max_steps}",
+ "D2DAll": "python ./dropout_more_layers.py  --hidden1 {hidden1} \
+ --hidden2 {hidden2} --learning_rate {learning_rate} --train_classes {D2} \
+ --training_readout_layer {training_readout_layer}  --test_classes {D2} \
+ --testing_readout_layer {testing_readout_layer}  --test2_classes {D1} \
+ --testing2_readout_layer {testing2_readout_layer} --test3_classes {D1} {D2}  \
+ --testing3_readout_layer {testing3_readout_layer}  --load_model {model_name}_D1D1 \
+ --start_at_step {start_at_step}  --plot_file  {resultPath}/{model_name}_D2D1.csv \
+ --permuteTrain {permuteTrain} --permuteTest {permuteTest} --permuteTest2 {permuteTest2} --permuteTest3 {permuteTest3} \
+ --mergeTest12 True \
+ --plot_file2 {resultPath}/{model_name}_D2D2.csv  \
+ --plot_file3 {resultPath}/{model_name}_D2DAll.csv --dnn_model cnn \
  --dropout_hidden {dropout_hidden} --dropout_input {dropout_input} --max_steps {max_steps}",
- "move": "mv /home/fdai0114/{expID}*.csv /tmp/ExpDist/"}
+ "move": "mv /home/fdai0114/{expID}*.csv /tmp/ExpDist/"},
+
+ "EWC": { "baseline": "",
+ "D1D1": "python ./ewc_with_options.py --hidden1 {hidden1} --hidden2 {hidden2} --hidden3 {hidden3} --max_steps {max_steps}  --permuteTrain {permuteTrain} --permuteTest {permuteTest}   --learning_rate {learning_rate}  --train_classes {D1} --training_readout_layer 1  --test_classes {D1} --testing_readout_layer 1 --save_model {model_name}_D1D1  --plot_file {model_name}_D1D1.csv --start_at_step 0 \
+ --dropout_hidden {dropout_hidden} --dropout_input {dropout_input}",
+ "D2DAll": "python ./ewc_with_options.py --hidden1 {hidden1} --hidden2 {hidden2} --hidden3 {hidden3} --max_steps {max_steps} --permuteTrain {permuteTrain} --permuteTest {permuteTest} --permuteTest2 {permuteTest2} --permuteTest3 {permuteTest3}  --learning_rate {learning_rate}  --train_classes {D2} --training_readout_layer {training_readout_layer}  --test_classes {D2} --testing_readout_layer 1  \
+ --test2_classes {D2} --testing2_readout_layer 1  --test3_classes {D1} {D2}  --testing3_readout_layer 1  --load_model {model_name}_D1D1 --start_at_step 2500  --plot_file {model_name}_D2D1.csv  --plot_file2 {model_name}_D2D2.csv  --plot_file3 {model_name}_D2D-1.csv --dropout_hidden {dropout_hidden} --dropout_input {dropout_input}  --mergeTest12 True",
+ "move": "mv /home/fdai0114/{expID}*.csv /tmp/ExpDist/" }
  }
+
+readoutLayers = {"baseline": {"training_readout_layer":" 1 ", "testing_readout_layer":" 1 "},
+                  "D1D1": {"training_readout_layer":" 1 ", "testing_readout_layer":" 1 "},
+                  "D2DAll":{"training_readout_layer":" 2 ", "testing_readout_layer":" 2 ",
+                          "testing2_readout_layer": " 1 ", "testing3_readout_layer" : " 1 "},
+                  "move":{}
+                }
+
+permutationSettings = {"baseline": {"permuteTrain":"0", "permuteTest":"0"},
+                      "D1D1": {"permuteTrain": "0", "permuteTest": "0"},
+                      "D2DAll":{"permuteTrain": "1", "permuteTest": "1",
+                                "permuteTest2":"0",  "permuteTest3":"0",
+                                "mergeTest12":"False"}
+                      }
+
 
 
 def getScriptName(expID):
@@ -166,12 +257,19 @@ def generateUniqueId(expID,params):
 
 
 def generateNewCommandLine(expID,scriptName, resultPath, action, params,maxSteps=2000):
+    #
+    lrate = str(params[1]) ;
+    lrate2 = str(params[2]) ;
+    hidden1 = str(params[3]) ;
+    hidden2 = str(params[4]) ;
+    hidden3 = "-1" ;
+    nrHiddenLayers=2 ;
 
     # create layer conf parameters
-    if len(params) == 5:
-        nrHiddenLayers = 2
-    else:
+    if len(params) == 6:
         nrHiddenLayers = 3
+        hidden3 = str(params[5]) ;
+
     hidden_layers = ""
 
     D1, D2, D3 = generateTaskString(params[0])
@@ -179,36 +277,52 @@ def generateNewCommandLine(expID,scriptName, resultPath, action, params,maxSteps
     model_name = generateUniqueId(expID,params)
     #print(model_name)
 
+    # handle dropout parameters
+    dropout_input = 1.0 ;
+    dropout_hidden = 1.0 ;
+    if expID.find("D-")!= -1:
+      dropout_input = 0.8 ;
+      dropout_hidden = 0.5 ;
+      expID = expID.replace("D-", "") ;
 
-    lrate = str(params[1]) ;
-    lrate2 = str(params[2]) ;
-    hidden1 = str(params[3]) ;
-    hidden2 = str(params[4]) ;
+    # handle readout layer parameters
+    readoutLayerDict = {"training_readout_layer":1, "testing_readout_layer":1,
+                        "testing2_readout_layer": 1, "testing3_readout_layer": 1}
+    if expID.find("-MRL")!=-1:
+      readoutLayerDict = readoutLayers[action] ;
 
-    if nrHiddenLayers==3:
-      hidden3 = str(params[5]) ;
-    else:
-      hidden3 = "0"
+    # remove D- and -MRL from expID
+    canonicalExpID = expID.replace("D-", "").replace("-MRL", "") ;
+    execStr = cmdTemplates[canonicalExpID][action] ;
 
-    execStr = cmdTemplates[expID][action] ;
+    # handle permutation settings
+    permutationDict = {"permuteTrain":"0", "permuteTest":"0",
+                       "permuteTest2":"0", "permuteTest3":0 }
+    if expID.find("DP")!= -1:   # a permuted task such as DP10-10 or DP5-5
+      permutationDict = permutationSettings[action] ;
+
+      print permutationDict
+
+    # extend readoutLayerDict to include permutation settings, only one ** arg allowed in calls
+    readoutLayerDict.update(permutationDict) ;
 
     if expID in ["wtIMM", "l2tIMM"]:
       D1imm = D1.replace(" ",",") ;
       D2imm = D2.replace(" ",",")
-      if params[0]  in ["DP10-10","DP5-5"]:
-        execStr = execStr + " --permuteTrain 0 --permuteTest 0 "
       execStr = execStr.format(expID = expID, D1=D1imm, D2 = D2imm,
             learning_rate = lrate,hidden1=hidden1, hidden2 = hidden2, hidden3 = hidden3,
             model_name = model_name, resultPath=resultPath,
-            addPermutation=False, plotFile=resultPath + model_name + "_"+action+".csv", max_steps=maxSteps)
+            addPermutation=False, plotFile=resultPath + model_name + "_"+action+".csv", max_steps=maxSteps, **readoutLayerDict)
 
 
       return execStr ;
-    elif expID == "fc":
+    elif canonicalExpID in ["LWTA-fc", "fc", "conv", "EWC"]:
+      #print "LWTAFCCONV-->",action, readoutLayerDict
       execStr = execStr.format(expID = expID,D1=D1,D2=D2,
             learning_rate = lrate,hidden1=hidden1, hidden2 = hidden2, hidden3 = hidden3,
             addPermutation=False, model_name=model_name, resultPath=resultPath, max_steps=maxSteps,
-            start_at_step=maxSteps, dropout_hidden=1, dropout_input=1)
+            start_at_step=maxSteps, dropout_hidden=dropout_hidden, dropout_input=dropout_input,
+            **readoutLayerDict)
 
     return execStr ;
 

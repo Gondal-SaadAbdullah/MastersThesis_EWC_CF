@@ -49,7 +49,7 @@ def train(dataSetTrain, dataSetTest, dataSetTest2, dataSetTest3):
 
     print("Total updates: %s "%((55000 // FLAGS.batch_size) * FLAGS.epochs))
     testdatalist = [dataSetTest,dataSetTest2,dataSetTest3] ;
-    
+
     if FLAGS.test2_classes==None and FLAGS.test3_classes == None:
       testdatalist = [dataSetTest] ;
     Classifier.train_mod(classifier, sess=sess, model_name=FLAGS.save_model if FLAGS.save_model !=None else "", model_init_name=FLAGS.load_model,
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=0.01,
                         help='Initial learning rate')
 
-    parser.add_argument('--load_model', type=str, default="", 
+    parser.add_argument('--load_model', type=str, default="",
                         help='Load previously saved model. Leave empty if no model exists.')
     parser.add_argument('--save_model', type=str, default="",
                         help='Provide path to save model.')
@@ -143,9 +143,9 @@ if __name__ == '__main__':
                         help="Take only the specified Train classes from MNIST DataSet")
     parser.add_argument('--test_classes', type=int, nargs='*',
                         help="Take the specified Test classes from MNIST DataSet")
-                        
+
     parser.add_argument('--epochs', type=int, default=1,
-                        help='the number of training epochs per task')                        
+                        help='the number of training epochs per task')
 
     parser.add_argument('--test2_classes', type=int, nargs='*',
                         help="Take the specified Test classes from MNIST DataSet. No test if empty")
@@ -223,6 +223,10 @@ if __name__ == '__main__':
     parser.add_argument('--plot_file3', type=str,
                         default='dropout_more_layers3.csv',
                         help='Filename for csv file to plot3. Give .csv extension after file name.')
+
+    parser.add_argument('--mergeTest12', type=eval, default=False,
+                        help='merge sets test and test2 to form test3?')
+
 
 
     FLAGS, unparsed = parser.parse_known_args()

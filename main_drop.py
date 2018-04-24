@@ -16,7 +16,7 @@ flags = tf.app.flags
 flags.DEFINE_boolean("mean_imm", True, "include Mean-IMM")
 flags.DEFINE_boolean("mode_imm", True, "include Mode-IMM")
 
-## Model Hyperparameter 
+## Model Hyperparameter
 flags.DEFINE_float("dropout", -1, "dropout rate of hidden layers")
 flags.DEFINE_float("alpha", -1, "alpha(K) of Mean & Mode IMM (cf. equation (3)~(8) in the article)")
 
@@ -25,6 +25,8 @@ flags.DEFINE_float("epoch", -1, "the number of training epoch")
 flags.DEFINE_string("optimizer", 'SGD', "the method name of optimization. (SGD|Adam|Momentum)")
 flags.DEFINE_float("learning_rate", -1, "learning rate of optimizer")
 flags.DEFINE_integer("batch_size", 50, "mini batch size")
+
+flags.DEFINE_boolean("mergeTest12", False, "set test3 is the union of test and test2")
 
 FLAGS = flags.FLAGS
 utils.SetDefaultAsNatural(FLAGS)

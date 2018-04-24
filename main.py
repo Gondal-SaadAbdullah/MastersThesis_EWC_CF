@@ -52,6 +52,8 @@ flags.DEFINE_float("dropout_input", 0.8, "dropout input layer")
 #flags.DEFINE_float("learning_rate", 0.01, "lr")
 #flags.DEFINE_integer("training_readout_layer", 1, "srl")
 
+flags.DEFINE_boolean("mergeTest12", False, "set test3 is the union of test and test2")
+
 
 
 FLAGS = flags.FLAGS
